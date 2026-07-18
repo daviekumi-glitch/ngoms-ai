@@ -12,6 +12,8 @@ import StudyPlanner from './pages/StudyPlanner'
 import Analytics from './pages/Analytics'
 import Leaderboard from './pages/Leaderboard'
 import Settings from './pages/Settings'
+import Notifications from './pages/Notifications'
+import Profile from './pages/Profile'
 import Layout from './components/layout/Layout'
 
 export default function App() {
@@ -31,6 +33,8 @@ export default function App() {
         <Route path="planner" element={<StudyPlanner />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="leaderboard" element={<Leaderboard />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
