@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, BookOpen, FileText, Zap, Layers, Bell, CreditCard,
   Trophy, Award, Settings as SettingsIcon, LogOut, Menu, X, Megaphone,
   Tag, HelpCircle, MessageSquare, ScrollText, ToggleLeft, Star, TrendingUp,
-  Shield, ChevronRight, Search, Sparkles, Database
+  Shield, ChevronRight, Sparkles, Plus, Save
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import CrudTable from '../components/admin/CrudTable'
@@ -39,10 +39,14 @@ export default function AdminPanel() {
   const [tab, setTab] = useState('dashboard')
   const [menuOpen, setMenuOpen] = useState(false)
 
-  if (!adminSession) { nav('/admin/login'); return null }
+  // Proper redirect using useEffect
+  useEffect(() => {
+    if (!adminSession) nav('/admin/login')
+  }, [adminSession, nav])
+
+  if (!adminSession) return null
 
   const activeTab = TABS.find(t => t.id === tab)
-
   const handleLogout = () => { adminLogout(); nav('/admin/login') }
 
   return (
@@ -80,7 +84,6 @@ export default function AdminPanel() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar */}
         <header className="glass border-b border-white/5 px-4 py-3 flex items-center gap-3 shrink-0">
           <button onClick={() => setMenuOpen(true)} className="md:hidden p-2 rounded-xl hover:bg-white/10 text-white/60">
             <Menu size={20} />
@@ -98,7 +101,6 @@ export default function AdminPanel() {
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
             <TabContent tab={tab} />
@@ -114,7 +116,13 @@ function TabContent({ tab }) {
 
   if (tab === 'dashboard') return <AdminDashboard app={app} />
 
-  // Configure each tab
+  // Special tabs
+  if (tab === 'banner') return <BannerEditor app={app} />
+  if (tab === 'features') return <FeatureToggles app={app} />
+  if (tab === 'settings') return <AppSettingsEditor app={app} />
+  if (tab === 'documents') return <DocumentsManager app={app} />
+
+  // CRUD tab configs
   const configs = {
     users: {
       title: 'Users', collection: 'users',
@@ -169,29 +177,17 @@ function TabContent({ tab }) {
       }
     },
     flashcards: {
-      title: 'Flashcard Decks', collection: 'flashcardDecks',
-      columns: [{key:'title',label:'Deck Title'},{key:'cards',label:'Cards'},{key:'author',label:'Author'},{key:'views',label:'Views'},{key:'status',label:'Status'}],
+      title: 'Flashcard Decks', collection: 'flashcards',
+      columns: [{key:'title',label:'Deck Title'},{key:'author',label:'Author'},{key:'views',label:'Views'},{key:'status',label:'Status'}],
       fields: [
         {key:'title',label:'Deck Title',type:'text'},
-        {key:'cards',label:'Card Count',type:'number'},
         {key:'author',label:'Author',type:'text'},
+        {key:'cards',label:'Card Count',type:'number'},
         {key:'views',label:'Views',type:'number'},
         {key:'status',label:'Status',type:'select',options:['published','draft','archived']},
       ],
-    },
-    documents: {
-      title: 'Documents', collection: 'documents',
-      columns: [{key:'title',label:'File Name'},{key:'uploadedBy',label:'Uploaded By'},{key:'size',label:'Size'},{key:'date',label:'Date'},{key:'status',label:'Status'}],
-      fields: [
-        {key:'title',label:'File Name',type:'text'},
-        {key:'size',label:'File Size',type:'text'},
-        {key:'uploadedBy',label:'Uploaded By',type:'text'},
-        {key:'date',label:'Upload Date',type:'date'},
-        {key:'type',label:'File Type',type:'select',options:['pdf','docx','pptx','image','video','audio']},
-        {key:'status',label:'Status',type:'select',options:['approved','pending','rejected']},
-      ],
       renderCell: (k, v) => {
-        if (k === 'status') return <span className={`px-2 py-0.5 rounded-full text-xs ${v==='approved'?'bg-green-500/20 text-green-400':v==='pending'?'bg-yellow-500/20 text-yellow-400':'bg-red-500/20 text-red-400'}`}>{v}</span>
+        if (k === 'status') return <span className={`px-2 py-0.5 rounded-full text-xs ${v==='published'?'bg-green-500/20 text-green-400':v==='draft'?'bg-yellow-500/20 text-yellow-400':'bg-red-500/20 text-red-400'}`}>{v}</span>
         return v ?? '—'
       }
     },
@@ -202,6 +198,9 @@ function TabContent({ tab }) {
         {key:'title',label:'Title',type:'text'},
         {key:'body',label:'Body',type:'textarea'},
         {key:'type',label:'Type',type:'select',options:['course','system','promo','update','warning']},
+        {key:'sent',label:'Sent Status',type:'number',default:1},
+        {key:'date',label:'Date',type:'date'},
+        {key:'status',label:'Status',type:'select',options:['sent','pending','draft']},
       ],
       renderCell: (k, v) => k === 'type' ? <span className="px-2 py-0.5 rounded-full text-xs bg-primary/20 text-primary">{v}</span> : (v ?? '—')
     },
@@ -212,7 +211,7 @@ function TabContent({ tab }) {
         {key:'name',label:'Plan Name',type:'text'},
         {key:'price',label:'Price (MK)',type:'text'},
         {key:'period',label:'Billing Period',type:'select',options:['forever','month','year']},
-        {key:'features',label:'Features',type:'textarea'},
+        {key:'features',label:'Features (comma-separated)',type:'textarea'},
         {key:'limits',label:'Limits',type:'text'},
         {key:'color',label:'Color',type:'select',options:['from-white/10 to-white/5','from-primary to-violet','from-amber-500 to-orange-500','from-emerald-500 to-teal-500']},
         {key:'status',label:'Status',type:'select',options:['active','inactive']},
@@ -311,6 +310,10 @@ function TabContent({ tab }) {
         {key:'category',label:'Category',type:'select',options:['Billing','Technical','General','Account','Content']},
         {key:'status',label:'Status',type:'select',options:['published','draft']},
       ],
+      renderCell: (k, v) => {
+        if (k === 'status') return <span className={`px-2 py-0.5 rounded-full text-xs ${v==='published'?'bg-green-500/20 text-green-400':'bg-white/10 text-white/50'}`}>{v}</span>
+        return v ?? '—'
+      }
     },
     testimonials: {
       title: 'Testimonials', collection: 'testimonials',
@@ -324,6 +327,7 @@ function TabContent({ tab }) {
       ],
       renderCell: (k, v) => {
         if (k === 'rating') return <span className="text-yellow-400">{'★'.repeat(v)}{'☆'.repeat(5-v)}</span>
+        if (k === 'status') return <span className={`px-2 py-0.5 rounded-full text-xs ${v==='published'?'bg-green-500/20 text-green-400':'bg-white/10 text-white/50'}`}>{v}</span>
         return v ?? '—'
       }
     },
@@ -359,16 +363,11 @@ function TabContent({ tab }) {
     },
   }
 
-  // Special tabs
-  if (tab === 'banner') return <BannerEditor app={app} />
-  if (tab === 'features') return <FeatureToggles app={app} />
-  if (tab === 'settings') return <AppSettingsEditor app={app} />
-
   const cfg = configs[tab]
-  if (!cfg) return <div className="text-white/40 text-center py-20">Tab not found</div>
+  if (!cfg) return <div className="text-white/40 text-sm">Section not found</div>
 
   return (
-    <CrudTable title={cfg.title} columns={cfg.columns} data={app[cfg.collection]}
+    <CrudTable title={cfg.title} columns={cfg.columns} data={app[cfg.collection] || []}
       fields={cfg.fields} renderCell={cfg.renderCell}
       onCreate={(d) => app.create(cfg.collection, d)}
       onUpdate={(id, d) => app.update(cfg.collection, id, d)}
@@ -376,16 +375,17 @@ function TabContent({ tab }) {
   )
 }
 
+// ===== Admin Dashboard =====
 function AdminDashboard({ app }) {
   const stats = [
-    { label: 'Total Users', value: app.users.length, icon: Users, color: 'from-blue-500 to-primary' },
-    { label: 'Active Courses', value: app.courses.filter(c => c.status === 'published').length, icon: BookOpen, color: 'from-emerald-500 to-teal-500' },
-    { label: 'Quizzes', value: app.quizzes.length, icon: Zap, color: 'from-amber-500 to-orange-500' },
-    { label: 'Revenue (MK)', value: app.payments.filter(p => p.status === 'completed').reduce((a, p) => a + parseInt(p.amount.replace(/\D/g, '') || '0'), 0).toLocaleString(), icon: TrendingUp, color: 'from-green-500 to-emerald-500' },
-    { label: 'Flashcard Decks', value: app.flashcardDecks.length, icon: Layers, color: 'from-violet to-purple-500' },
-    { label: 'Documents', value: app.documents.length, icon: FileText, color: 'from-cyan-500 to-blue-500' },
-    { label: 'Notifications Sent', value: app.notifications.length, icon: Bell, color: 'from-red-500 to-orange-500' },
-    { label: 'Active Coupons', value: app.coupons.filter(c => c.status === 'active').length, icon: Tag, color: 'from-orange-500 to-red-500' },
+    { label: 'Total Users', value: (app.users || []).length, icon: Users, color: 'from-blue-500 to-primary' },
+    { label: 'Active Courses', value: (app.courses || []).filter(c => c.status === 'published').length, icon: BookOpen, color: 'from-emerald-500 to-teal-500' },
+    { label: 'Quizzes', value: (app.quizzes || []).length, icon: Zap, color: 'from-amber-500 to-orange-500' },
+    { label: 'Revenue (MK)', value: (app.payments || []).filter(p => p.status === 'completed').reduce((a, p) => a + parseInt((p.amount || '0').replace(/\D/g, '') || '0'), 0).toLocaleString(), icon: TrendingUp, color: 'from-green-500 to-emerald-500' },
+    { label: 'Flashcard Decks', value: (app.flashcardDecks || []).length, icon: Layers, color: 'from-violet to-purple-500' },
+    { label: 'Documents', value: (app.documents || []).length, icon: FileText, color: 'from-cyan-500 to-blue-500' },
+    { label: 'Notifications Sent', value: (app.notifications || []).length, icon: Bell, color: 'from-red-500 to-orange-500' },
+    { label: 'Active Coupons', value: (app.coupons || []).filter(c => c.status === 'active').length, icon: Tag, color: 'from-orange-500 to-red-500' },
   ]
 
   return (
@@ -407,9 +407,9 @@ function AdminDashboard({ app }) {
         <div className="glass p-5 rounded-2xl">
           <h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><Users size={16} className="text-primary" /> Recent Users</h3>
           <div className="space-y-2">
-            {app.users.slice(0, 5).map(u => (
+            {(app.users || []).slice(0, 5).map(u => (
               <div key={u.id} className="flex items-center gap-3 py-2 border-b border-white/5">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-violet flex items-center justify-center text-xs font-bold text-white">{u.name[0]}</div>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-violet flex items-center justify-center text-xs font-bold text-white">{(u.name || '?')[0]}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white/80 text-sm font-medium truncate">{u.name}</p>
                   <p className="text-white/30 text-xs truncate">{u.email}</p>
@@ -417,12 +417,13 @@ function AdminDashboard({ app }) {
                 <span className={`px-2 py-0.5 rounded-full text-xs ${u.plan === 'Premium' ? 'bg-primary/20 text-primary' : 'bg-white/10 text-white/50'}`}>{u.plan}</span>
               </div>
             ))}
+            {(app.users || []).length === 0 && <p className="text-white/30 text-xs text-center py-4">No users yet</p>}
           </div>
         </div>
         <div className="glass p-5 rounded-2xl">
           <h3 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><ScrollText size={16} className="text-primary" /> Recent Logs</h3>
           <div className="space-y-2">
-            {app.logs.slice(0, 5).map(l => (
+            {(app.logs || []).slice(0, 5).map(l => (
               <div key={l.id} className="flex items-center gap-3 py-2 border-b border-white/5">
                 <span className={`w-2 h-2 rounded-full ${l.level === 'success' ? 'bg-green-400' : l.level === 'warning' ? 'bg-yellow-400' : l.level === 'error' ? 'bg-red-400' : 'bg-primary'}`} />
                 <div className="flex-1 min-w-0">
@@ -431,6 +432,7 @@ function AdminDashboard({ app }) {
                 </div>
               </div>
             ))}
+            {(app.logs || []).length === 0 && <p className="text-white/30 text-xs text-center py-4">No logs yet</p>}
           </div>
         </div>
       </div>
@@ -438,53 +440,130 @@ function AdminDashboard({ app }) {
   )
 }
 
+// ===== Documents Manager =====
+function DocumentsManager({ app }) {
+  const [uploading, setUploading] = useState(false)
+  const [docData, setDocData] = useState({ title: '', type: 'PDF', size: '0 KB' })
+
+  const handleCreate = async () => {
+    if (!docData.title) return
+    await app.create('documents', {
+      ...docData,
+      date: new Date().toISOString().split('T')[0],
+      uploadedBy: 'Admin',
+      status: 'published',
+      fileUrl: ''
+    })
+    setDocData({ title: '', type: 'PDF', size: '0 KB' })
+  }
+
+  return (
+    <div>
+      <div className="glass p-5 rounded-2xl mb-4">
+        <h3 className="text-white font-bold text-sm mb-4">Upload New Document</h3>
+        <div className="space-y-3">
+          <input value={docData.title} onChange={e => setDocData({ ...docData, title: e.target.value })}
+            placeholder="Document title" className="input-field" />
+          <div className="grid grid-cols-2 gap-3">
+            <select value={docData.type} onChange={e => setDocData({ ...docData, type: e.target.value })}
+              className="input-field">
+              {['PDF', 'DOCX', 'PPTX', 'XLSX', 'Image', 'Video', 'Audio'].map(t => <option key={t} value={t} className="bg-navy-800">{t}</option>)}
+            </select>
+            <input value={docData.size} onChange={e => setDocData({ ...docData, size: e.target.value })}
+              placeholder="File size" className="input-field" />
+          </div>
+          <button onClick={handleCreate}
+            className="w-full bg-gradient-to-r from-primary to-violet text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2">
+            <Plus size={16} /> Add Document
+          </button>
+        </div>
+      </div>
+      <CrudTable title="Documents"
+        columns={[{key:'title',label:'Title'},{key:'type',label:'Type'},{key:'size',label:'Size'},{key:'uploadedBy',label:'Uploaded By'},{key:'date',label:'Date'},{key:'status',label:'Status'}]}
+        data={app.documents || []}
+        fields={[
+          {key:'title',label:'Document Title',type:'text'},
+          {key:'type',label:'Type',type:'select',options:['PDF','DOCX','PPTX','XLSX','Image','Video','Audio']},
+          {key:'size',label:'File Size',type:'text'},
+          {key:'uploadedBy',label:'Uploaded By',type:'text'},
+          {key:'date',label:'Date',type:'date'},
+          {key:'fileUrl',label:'File URL',type:'text'},
+          {key:'status',label:'Status',type:'select',options:['published','draft','archived']},
+        ]}
+        renderCell={(k, v) => {
+          if (k === 'type') return <span className="px-2 py-0.5 rounded-full text-xs bg-primary/20 text-primary">{v}</span>
+          if (k === 'status') return <span className={`px-2 py-0.5 rounded-full text-xs ${v==='published'?'bg-green-500/20 text-green-400':'bg-white/10 text-white/50'}`}>{v}</span>
+          return v ?? '—'
+        }}
+        onCreate={(d) => app.create('documents', d)}
+        onUpdate={(id, d) => app.update('documents', id, d)}
+        onDelete={(id) => app.remove('documents', id)} />
+    </div>
+  )
+}
+
+// ===== Banner Editor =====
 function BannerEditor({ app }) {
   const { banner, setBanner } = app
+  const [local, setLocal] = useState(banner || { title: '', subtitle: '', actionText: '', actionRoute: '/chat', bgColor: 'from-primary to-violet', active: false, icon: 'sparkles' })
+
+  useEffect(() => {
+    if (banner) setLocal(banner)
+  }, [banner])
+
+  const save = () => setBanner(local)
+
   return (
     <div className="max-w-2xl">
       <div className="glass p-6 rounded-2xl mb-4">
         <h3 className="text-white font-bold text-sm mb-4">Dashboard Banner (shown to all users)</h3>
-        <div className={`bg-gradient-to-r ${banner.bgColor} rounded-2xl p-5 mb-6`}>
+        {/* Preview */}
+        <div className={`bg-gradient-to-r ${local.bgColor} rounded-2xl p-5 mb-6`}>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center">
               <Sparkles size={24} className="text-white" />
             </div>
             <div className="flex-1">
-              <p className="text-white font-bold text-lg">{banner.title}</p>
-              <p className="text-white/80 text-sm">{banner.subtitle}</p>
+              <p className="text-white font-bold text-lg">{local.title || 'Banner Title'}</p>
+              <p className="text-white/80 text-sm">{local.subtitle || 'Banner subtitle'}</p>
             </div>
-            {banner.active && <span className="bg-white/20 px-3 py-1.5 rounded-xl text-white text-sm font-semibold">{banner.actionText}</span>}
+            {local.active && <span className="bg-white/20 px-3 py-1.5 rounded-xl text-white text-sm font-semibold">{local.actionText || 'Action'}</span>}
           </div>
         </div>
+        {/* Controls */}
         <div className="space-y-4">
           <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={banner.active} onChange={e => setBanner({ active: e.target.checked })} className="w-5 h-5 rounded accent-primary" />
+            <input type="checkbox" checked={local.active} onChange={e => setLocal({ ...local, active: e.target.checked })} className="w-5 h-5 rounded accent-primary" />
             <span className="text-white/80 text-sm font-medium">Banner Active (visible to users)</span>
           </label>
           <div>
             <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Banner Title</label>
-            <input value={banner.title} onChange={e => setBanner({ title: e.target.value })} className="input-field" />
+            <input value={local.title || ''} onChange={e => setLocal({ ...local, title: e.target.value })} className="input-field" />
           </div>
           <div>
             <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Banner Subtitle</label>
-            <input value={banner.subtitle} onChange={e => setBanner({ subtitle: e.target.value })} className="input-field" />
+            <input value={local.subtitle || ''} onChange={e => setLocal({ ...local, subtitle: e.target.value })} className="input-field" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Action Button Text</label>
-              <input value={banner.actionText} onChange={e => setBanner({ actionText: e.target.value })} className="input-field" />
+              <input value={local.actionText || ''} onChange={e => setLocal({ ...local, actionText: e.target.value })} className="input-field" />
             </div>
             <div>
               <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Action Route</label>
-              <input value={banner.actionRoute} onChange={e => setBanner({ actionRoute: e.target.value })} className="input-field" />
+              <input value={local.actionRoute || ''} onChange={e => setLocal({ ...local, actionRoute: e.target.value })} className="input-field" />
             </div>
           </div>
           <div>
             <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Background Color</label>
-            <select value={banner.bgColor} onChange={e => setBanner({ bgColor: e.target.value })} className="input-field">
+            <select value={local.bgColor || 'from-primary to-violet'} onChange={e => setLocal({ ...local, bgColor: e.target.value })} className="input-field">
               {['from-primary to-violet','from-emerald-500 to-teal-500','from-amber-500 to-orange-500','from-rose-500 to-pink-500','from-cyan-500 to-blue-500','from-red-500 to-orange-500'].map(c => <option key={c} value={c} className="bg-navy-800">{c}</option>)}
             </select>
           </div>
+          <button onClick={save}
+            className="w-full bg-gradient-to-r from-primary to-violet text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2">
+            <Save size={16} /> Save Banner
+          </button>
         </div>
       </div>
       <p className="text-white/30 text-xs">Changes reflect instantly on all user dashboards.</p>
@@ -492,15 +571,44 @@ function BannerEditor({ app }) {
   )
 }
 
+// ===== Feature Toggles =====
 function FeatureToggles({ app }) {
-  const { features, toggleFeature } = app
+  const { features, toggleFeature, create } = app
+  const [showAdd, setShowAdd] = useState(false)
+  const [newFeature, setNewFeature] = useState({ key: '', name: '', icon: '✨' })
+
+  const handleAdd = async () => {
+    if (!newFeature.key || !newFeature.name) return
+    await create('features', { ...newFeature, enabled: true })
+    setShowAdd(false)
+    setNewFeature({ key: '', name: '', icon: '✨' })
+  }
+
   return (
     <div className="max-w-2xl">
       <div className="glass p-6 rounded-2xl">
-        <h3 className="text-white font-bold text-sm mb-1">Feature Management</h3>
-        <p className="text-white/30 text-xs mb-4">Enable or disable features for all users instantly</p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-white font-bold text-sm">Feature Management</h3>
+            <p className="text-white/30 text-xs">Enable or disable features for all users instantly</p>
+          </div>
+          <button onClick={() => setShowAdd(!showAdd)}
+            className="bg-gradient-to-r from-primary to-violet text-white font-semibold px-3 py-2 rounded-xl text-sm flex items-center gap-1.5">
+            <Plus size={14} /> Add
+          </button>
+        </div>
+
+        {showAdd && (
+          <div className="glass p-4 rounded-2xl mb-4 space-y-3">
+            <input value={newFeature.name} onChange={e => setNewFeature({ ...newFeature, name: e.target.value })} placeholder="Feature name" className="input-field" />
+            <input value={newFeature.key} onChange={e => setNewFeature({ ...newFeature, key: e.target.value })} placeholder="Feature key (e.g. ai_chat)" className="input-field" />
+            <input value={newFeature.icon} onChange={e => setNewFeature({ ...newFeature, icon: e.target.value })} placeholder="Icon emoji" className="input-field" />
+            <button onClick={handleAdd} className="w-full bg-gradient-to-r from-primary to-violet text-white font-bold py-2.5 rounded-xl text-sm">Create Feature</button>
+          </div>
+        )}
+
         <div className="space-y-2">
-          {features.map(f => (
+          {(features || []).map(f => (
             <div key={f.id} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 hover:bg-white/8 transition-all">
               <span className="text-2xl">{f.icon}</span>
               <div className="flex-1">
@@ -515,14 +623,23 @@ function FeatureToggles({ app }) {
               <span className={`text-xs font-semibold ${f.enabled ? 'text-green-400' : 'text-white/30'}`}>{f.enabled ? 'ON' : 'OFF'}</span>
             </div>
           ))}
+          {(!features || features.length === 0) && <p className="text-white/30 text-xs text-center py-4">No features configured</p>}
         </div>
       </div>
     </div>
   )
 }
 
+// ===== App Settings Editor =====
 function AppSettingsEditor({ app }) {
   const { appSettings, setSettings } = app
+  const [local, setLocal] = useState(appSettings || {})
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (appSettings) setLocal(appSettings)
+  }, [appSettings])
+
   const fields = [
     { key: 'appName', label: 'App Name' },
     { key: 'tagline', label: 'Tagline' },
@@ -534,6 +651,13 @@ function AppSettingsEditor({ app }) {
     { key: 'version', label: 'App Version' },
     { key: 'maintenanceMessage', label: 'Maintenance Message' },
   ]
+
+  const handleSave = () => {
+    setSettings(local)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
   return (
     <div className="max-w-2xl">
       <div className="glass p-6 rounded-2xl mb-4">
@@ -542,17 +666,21 @@ function AppSettingsEditor({ app }) {
           {fields.map(f => (
             <div key={f.key}>
               <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">{f.label}</label>
-              <input value={appSettings[f.key] || ''} onChange={e => setSettings({ [f.key]: e.target.value })} className="input-field" />
+              <input value={local[f.key] || ''} onChange={e => setLocal({ ...local, [f.key]: e.target.value })} className="input-field" />
             </div>
           ))}
           <label className="flex items-center gap-3 cursor-pointer pt-2">
-            <input type="checkbox" checked={appSettings.maintenanceMode} onChange={e => setSettings({ maintenanceMode: e.target.checked })} className="w-5 h-5 rounded accent-red-500" />
+            <input type="checkbox" checked={local.maintenanceMode || false} onChange={e => setLocal({ ...local, maintenanceMode: e.target.checked })} className="w-5 h-5 rounded accent-red-500" />
             <span className="text-white/80 text-sm font-medium">Maintenance Mode (blocks user access)</span>
           </label>
         </div>
+        <button onClick={handleSave}
+          className="w-full mt-4 bg-gradient-to-r from-primary to-violet text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2">
+          <Save size={16} /> {saved ? 'Saved!' : 'Save Settings'}
+        </button>
       </div>
       <div className="glass p-4 rounded-2xl">
-        <p className="text-white/30 text-xs">Settings save automatically and reflect across the entire platform.</p>
+        <p className="text-white/30 text-xs">Settings save to the database and reflect across the entire platform.</p>
       </div>
     </div>
   )
