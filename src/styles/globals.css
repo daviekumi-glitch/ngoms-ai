@@ -28,3 +28,9 @@
   .text-glow { text-shadow: 0 0 20px rgba(59,130,246,0.8); }
   .box-glow { box-shadow: 0 0 30px rgba(59,130,246,0.2); }
 }
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .safe-area-inset-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
