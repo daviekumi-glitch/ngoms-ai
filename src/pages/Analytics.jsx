@@ -90,7 +90,7 @@ const ProgressAnalytics = () => {
               margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
             >
               {barGradient}
-              <CartesianGrid strokeDasharray="3 3" strokeOpacity:0.2 stroke="#fff" />
+              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} stroke="#fff" />
               <XAxis dataKey="day" tick={{ fill: '#fff', fontSize: 12 }} />
               <YAxis
                 tick={{ fill: '#fff', fontSize: 12 }}
@@ -103,7 +103,7 @@ const ProgressAnalytics = () => {
                 containerStyle={{ background: 'rgba(10,15,30,0.8)', borderRadius: 8 }}
                 formatter={(value) => `${value} hrs`}
               />
-              <Legend verticalAlign="bottom" height={30} filler={#fff} />
+              <Legend verticalAlign="bottom" height={30}  />
               <Bar dataKey="hours" fill="url(#barGrad)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -122,7 +122,7 @@ const ProgressAnalytics = () => {
               margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
             >
               {lineGradient}
-              <CartesianGrid strokeDasharray="3 3" strokeOpacity:0.2 stroke="#fff" />
+              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} stroke="#fff" />
               <XAxis dataKey="week" tick={{ fill: '#fff', fontSize: 12 }} />
               <YAxis
                 tick={{ fill: '#fff', fontSize: 12 }}
@@ -135,7 +135,7 @@ const ProgressAnalytics = () => {
                 containerStyle={{ background: 'rgba(10,15,30,0.8)', borderRadius: 8 }}
                 formatter={(value) => `${value}%`}
               />
-              <Legend verticalAlign="bottom" height={30} filler={#fff} />
+              <Legend verticalAlign="bottom" height={30}  />
               <Line type="monotone" dataKey="score" stroke="url(#lineGrad)" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>

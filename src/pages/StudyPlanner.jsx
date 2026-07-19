@@ -4,7 +4,7 @@ import {
   Calendar,
   Plus,
   Sparkles,
-  Fire,
+  Flame,
   Activity,
   X,
 } from "lucide-react";
@@ -158,7 +158,7 @@ const StudyPlanner = () => {
           whileTap={{ scale: 0.95 }}
           className="flex items-center space-x-3 p-4 bg-gray-800/50 backdrop-blur rounded-xl"
         >
-          <Fire className="h-5 w-5 text-red-400" />
+          <Flame className="h-5 w-5 text-red-400" />
           <span>Streak: {streak} day{streak !== 1 ? "s" : ""}</span>
         </motion.div>
 
@@ -295,3 +295,19 @@ const StudyPlanner = () => {
                   className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded"
                 />
               </div>
+
+              <button
+                type="submit"
+                className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-[#3B82F6] to-[#7C3AED] text-white font-semibold hover:scale-[1.02] transition-transform"
+              >
+                Add Event
+              </button>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
+export default StudyPlanner;

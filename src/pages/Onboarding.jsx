@@ -1,269 +1,274 @@
-We are going to create a 4-step onboarding flow using React and Framer Motion for animations.
- Steps:
- 1. Choose role (Student, Lecturer, Institution) - 3 animated cards with gradient border on selection.
- 2. Select subjects (toggleable chips for 8 subjects).
- 3. Study goals: hours per day slider (1-12) and exam date input.
- 4. Choose language: 5 options with flag emojis.
+import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
+import {
+  GraduationCap, BookOpen, Building2, ArrowRight, ArrowLeft,
+  Check, Clock, Calendar, Globe, Sparkles
+} from 'lucide-react'
 
- We'll use:
-   - Framer Motion for animations (transitions, card hover, etc.)
-   - State to manage the current step and selections.
+const roles = [
+  { id: 'student', label: 'Student', icon: GraduationCap, desc: 'Access AI tools and study materials' },
+  { id: 'lecturer', label: 'Lecturer', icon: BookOpen, desc: 'Create content and track student progress' },
+  { id: 'institution', label: 'Institution', icon: Building2, desc: 'Manage departments and analytics' },
+]
 
- We assume:
-   - We are using React 18+ and functional components.
-   - We have access to framer-motion (so we'll import motion from 'framer-motion').
+const subjects = [
+  'Biology', 'Physics', 'Mathematics', 'Chemistry', 'History',
+  'English', 'Computer Science', 'Geography', 'Economics', 'Psychology',
+]
 
- We'll create a component called `OnboardingFlow`.
+const languages = [
+  { id: 'en', flag: '🇬🇧', name: 'English', native: 'English' },
+  { id: 'fr', flag: '🇫🇷', name: 'French', native: 'Français' },
+  { id: 'ny', flag: '🇲🇼', name: 'Chichewa', native: 'Chichewa' },
+  { id: 'sw', flag: '🇹🇿', name: 'Swahili', native: 'Kiswahili' },
+  { id: 'pt', flag: '🇵🇹', name: 'Portuguese', native: 'Português' },
+]
 
- Structure:
-   - State: currentStep (0-3), selectedRole (null or one of 'student','lecturer','institution'), selectedSubjects (array of strings), hoursPerDay (number), examDate (string), selectedLanguage (string).
-   - Progress dots: 4 dots, active dot based on currentStep.
-   - Each step will be conditionally rendered based on currentStep.
+export default function Onboarding() {
+  const [step, setStep] = useState(1)
+  const [role, setRole] = useState('')
+  const [selectedSubjects, setSelectedSubjects] = useState([])
+  const [hours, setHours] = useState(4)
+  const [examDate, setExamDate] = useState('')
+  const [language, setLanguage] = useState('en')
 
- For animations:
-   - We'll use Framer Motion to animate the transition between steps (e.g., fade, slide).
-   - For the role cards: on hover, we can animate the border gradient and maybe a slight scale.
+  const toggleSubject = (s) => {
+    setSelectedSubjects(prev =>
+      prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
+    )
+  }
 
- Note: Since the problem says "JSX only", we are writing the JSX and the necessary state and event handlers inside the component.
+  const next = () => setStep(s => Math.min(s + 1, 4))
+  const back = () => setStep(s => Math.max(s - 1, 1))
 
- However, note: the problem says "complete production React JSX component", so we'll write the entire functional component.
+  const canProceed = () => {
+    if (step === 1) return role !== ''
+    if (step === 2) return selectedSubjects.length > 0
+    if (step === 3) return examDate !== ''
+    return true
+  }
 
- Let's break down:
+  return (
+    <div className="min-h-screen bg-navy-900 flex flex-col items-center justify-center px-6 py-10">
+      {/* Progress dots */}
+      <div className="flex items-center gap-2 mb-10">
+        {[1, 2, 3, 4].map(s => (
+          <div
+            key={s}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              s === step ? 'w-8 bg-gradient-to-r from-primary to-violet' :
+              s < step ? 'w-2 bg-primary' : 'w-2 bg-white/20'
+            }`}
+          />
+        ))}
+      </div>
 
- Step 1: Role Selection
-   - Three cards: each has an icon (we'll use placeholder icons, e.g., from react-icons or just text for simplicity? but the problem says icon, so we'll assume we have icon components or use emojis?).
-     Since it's JSX only and we don't have actual icon libraries, we'll use text placeholders for icons (or we can use emojis as icons?).
-     But note: the problem says "icon", so we'll use emojis for simplicity in this example (or we can note that in a real app we'd use icons, but for JSX only we do what we can).
+      <AnimatePresence mode="wait">
+        {/* STEP 1: Role Selection */}
+        {step === 1 && (
+          <motion.div
+            key="step1"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            className="w-full max-w-md"
+          >
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary to-violet flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/30">
+                <Sparkles size={28} className="text-white" />
+              </div>
+              <h1 className="text-2xl font-black text-white">Welcome to Ngoms AI</h1>
+              <p className="text-white/40 text-sm mt-1">Choose your role to get started</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              {roles.map(r => (
+                <motion.button
+                  key={r.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setRole(r.id)}
+                  className={`p-5 rounded-2xl border-2 text-left transition-all duration-200 ${
+                    role === r.id
+                      ? 'border-primary bg-primary/10'
+                      : 'border-white/10 glass hover:border-primary/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                      role === r.id ? 'bg-gradient-to-br from-primary to-violet' : 'bg-white/5'
+                    }`}>
+                      <r.icon size={24} className={role === r.id ? 'text-white' : 'text-white/60'} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-white text-sm">{r.label}</p>
+                      <p className="text-white/40 text-xs mt-0.5">{r.desc}</p>
+                    </div>
+                    {role === r.id && <Check size={20} className="text-primary" />}
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
-   However, the problem does not specify which icons, so we'll use:
-      Student: 🎓
-      Lecturer: 👨‍🏫
-      Institution: 🏫
+        {/* STEP 2: Subject Selection */}
+        {step === 2 && (
+          <motion.div
+            key="step2"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            className="w-full max-w-md"
+          >
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary to-violet flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/30">
+                <BookOpen size={28} className="text-white" />
+              </div>
+              <h1 className="text-2xl font-black text-white">Select Your Subjects</h1>
+              <p className="text-white/40 text-sm mt-1">Choose what you want to study</p>
+            </div>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {subjects.map(s => {
+                const active = selectedSubjects.includes(s)
+                return (
+                  <motion.button
+                    key={s}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => toggleSubject(s)}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      active
+                        ? 'bg-gradient-to-r from-primary to-violet text-white shadow-lg shadow-primary/30'
+                        : 'glass text-white/50 hover:text-white'
+                    }`}
+                  >
+                    {active && <Check size={12} className="inline mr-1" />}
+                    {s}
+                  </motion.button>
+                )
+              })}
+            </div>
+            {selectedSubjects.length > 0 && (
+              <p className="text-center text-primary text-xs mt-4">
+                {selectedSubjects.length} subject{selectedSubjects.length > 1 ? 's' : ''} selected
+              </p>
+            )}
+          </motion.div>
+        )}
 
-   - Each card: on click, set selectedRole. Also, we want a gradient border when selected or hovered? The problem says: "click to select with gradient border". So we'll have:
-        - Default: maybe a subtle border?
-        - On hover: animate to show gradient border? 
-        - On selected: keep the gradient border.
+        {/* STEP 3: Study Goals */}
+        {step === 3 && (
+          <motion.div
+            key="step3"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            className="w-full max-w-md"
+          >
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary to-violet flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/30">
+                <Clock size={28} className="text-white" />
+              </div>
+              <h1 className="text-2xl font-black text-white">Set Your Goals</h1>
+              <p className="text-white/40 text-sm mt-1">Help us personalize your plan</p>
+            </div>
 
-   We'll manage the selectedRole state and conditionally apply a class or style for the gradient border.
+            <div className="glass p-5 rounded-2xl mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-white/60 text-sm font-semibold">Study hours per day</span>
+                <span className="text-2xl font-black gradient-text">{hours}h</span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="12"
+                value={hours}
+                onChange={e => setHours(Number(e.target.value))}
+                className="w-full h-2 rounded-full appearance-none cursor-pointer bg-gradient-to-r from-primary to-violet"
+              />
+              <div className="flex justify-between text-white/30 text-xs mt-2">
+                <span>1h</span><span>6h</span><span>12h</span>
+              </div>
+            </div>
 
-   But note: we are using Framer Motion, so we can animate the border on hover and when selected.
+            <div className="glass p-5 rounded-2xl">
+              <label className="text-white/60 text-sm font-semibold flex items-center gap-2 mb-3">
+                <Calendar size={16} /> Exam Date
+              </label>
+              <input
+                type="date"
+                value={examDate}
+                onChange={e => setExamDate(e.target.value)}
+                className="input-field"
+              />
+            </div>
+          </motion.div>
+        )}
 
-   However, the problem says "animated cards", so we'll have:
-        - On hover: scale slightly and show gradient border (if not selected) or keep it (if selected? but when selected we want it to stay).
-        - Actually, when clicked (selected) we want the gradient border to appear and stay.
+        {/* STEP 4: Language Selection */}
+        {step === 4 && (
+          <motion.div
+            key="step4"
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -40 }}
+            className="w-full max-w-md"
+          >
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary to-violet flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/30">
+                <Globe size={28} className="text-white" />
+              </div>
+              <h1 className="text-2xl font-black text-white">Choose Language</h1>
+              <p className="text-white/40 text-sm mt-1">Pick your preferred language</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              {languages.map(l => (
+                <motion.button
+                  key={l.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setLanguage(l.id)}
+                  className={`p-4 rounded-2xl flex items-center gap-4 border-2 transition-all duration-200 ${
+                    language === l.id
+                      ? 'border-primary bg-primary/10'
+                      : 'border-transparent glass hover:border-white/20'
+                  }`}
+                >
+                  <span className="text-3xl">{l.flag}</span>
+                  <div className="flex-1 text-left">
+                    <p className="font-semibold text-white text-sm">{l.name}</p>
+                    <p className="text-white/40 text-xs">{l.native}</p>
+                  </div>
+                  {language === l.id && <Check size={20} className="text-primary" />}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-   Approach:
-        - We'll have a state for selectedRole.
-        - For each card, we'll check if it's the selectedRole -> then we apply the gradient border style (and maybe a slight scale) and also on hover we can have an extra effect? 
-          But the problem says "click to select with gradient border", so the gradient border is the selection indicator.
-
-   Let's design:
-        - Default state: card has a thin border (maybe #eee) and no gradient.
-        - When hovered (and not selected): we show a gradient border (using CSS gradient) and maybe a slight scale.
-        - When selected: we show the gradient border and keep it (and maybe a slight scale even when not hovered?).
-
-   However, to avoid too much complexity, we'll do:
-        - The card will have a border that is either:
-            - default: 2px solid #eee
-            - hover (if not selected): 2px gradient (using conic-gradient or linear-gradient) and scale(1.05)
-            - selected: 2px gradient and scale(1.05) [so it looks selected even when not hovered]
-
-   But note: the problem says "gradient border" for selection, so we'll have the gradient border only when selected? 
-   However, the problem also says "animated cards", so we want hover effects too.
-
-   Let's interpret: 
-        - The card should have a gradient border when selected (to indicate selection) and also when hovered (to indicate interactivity) but maybe the hover effect is temporary.
-
-   We'll do:
-        - If selected: always show gradient border and scale(1.05).
-        - If not selected: on hover, show gradient border and scale(1.05); on leave, go back to default.
-
-   We can use Framer Motion's `whileHover` and `whileTap` for the hover and tap effects, but for the selected state we want to override.
-
-   Alternatively, we can manage two states: hover and selected.
-
-   Since we are in React, we can do:
-
-        const isSelected = selectedRole === role;
-        const isHovered = ... (we'd need hover state per card)
-
-   But to avoid per-card hover state (which would require more state), we can use CSS :hover? 
-   However, the problem says to use framer-motion for animations, so we'll use Framer Motion for the hover and tap.
-
-   We'll use:
-        <motion.div
-          whileHover={{ scale: 1.05, borderImage: ... }} 
-          whileTap={{ scale: 0.95 }}
-          ... 
+      {/* Navigation buttons */}
+      <div className="flex items-center gap-3 mt-10 w-full max-w-md">
+        {step > 1 && (
+          <button
+            onClick={back}
+            className="glass rounded-xl px-5 py-3 flex items-center gap-2 text-white/60 hover:text-white transition-all text-sm font-semibold"
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+        )}
+        <button
+          onClick={next}
+          disabled={!canProceed()}
+          className={`flex-1 rounded-xl py-3 flex items-center justify-center gap-2 text-sm font-bold transition-all ${
+            canProceed()
+              ? 'bg-gradient-to-r from-primary to-violet text-white shadow-lg shadow-primary/30 hover:scale-[1.02]'
+              : 'bg-white/5 text-white/30 cursor-not-allowed'
+          }`}
         >
-
-   But note: we want the gradient border to appear on hover and when selected.
-
-   How to do gradient border with Framer Motion? 
-        We can animate the borderImage property? But note: borderImage is not straightforward.
-
-   Alternatively, we can use a pseudo-element for the border and animate its opacity or scale? 
-   But the problem says "gradient border", so we can have:
-
-        - A wrapper that has the card content and then an outer div that we animate the border of.
-
-   However, to keep it simple in JSX (and since we are only writing JSX and not CSS), we might have to rely on inline styles and Framer Motion's ability to animate style properties.
-
-   But note: borderImage is a complex property and animating it might not be smooth.
-
-   Another idea: use a gradient background on an outer ring and scale it? 
-
-   Given the complexity and the fact that the problem says "JSX only", we might simplify the gradient border to a solid color for the purpose of this example? 
-   But the problem specifically says gradient.
-
-   Alternatively, we can use a CSS class for the gradient border and then use Framer Motion to animate the opacity of an overlay? 
-
-   However, the problem does not specify the exact animation, so we'll do:
-
-        We'll have a card that by default has:
-          border: 2px solid #eee;
-          border-radius: 12px;
-
-        When selected or hovered (if not selected), we want to show:
-          border: 2px solid; 
-          border-image: linear-gradient(to right, #ff9a9e, #fad0c4) 1;   /* example gradient */
-
-        But note: animating border-image is not supported in all browsers and might be tricky.
-
-   Considering the constraints, and since this is a code example, we'll use a simpler approach:
-
-        We'll have an outer div that is slightly larger than the card, and we'll animate its opacity and scale to show a gradient background underneath? 
-        But that would be a glow effect, not a border.
-
-   Alternatively, we can use the `box-shadow` to simulate a gradient border? Not exactly.
-
-   Given the time, and since the problem is about the structure, we'll assume we have a way to do the gradient border via CSS and we'll use Framer Motion to animate the scale and maybe the border width? 
-   But the problem says "gradient border", so we'll focus on the structure and note that in a real app we'd use CSS for the gradient.
-
-   For the purpose of this JSX example, we'll use a placeholder for the gradient border style and animate the scale and maybe a border color change (to a solid color) as a simplification? 
-   But the problem says gradient.
-
-   Let me re-read: "click to select with gradient border". So when clicked (selected) we want a gradient border.
-
-   We'll do:
-
-        We'll have a state for selectedRole.
-
-        For each card, we'll conditionally apply a class that has the gradient border (defined in CSS) OR we'll use inline style for the borderImage? 
-        However, the problem says JSX only, so we cannot assume external CSS.
-
-   Since we are only allowed to write JSX (and the necessary JavaScript in-component logic), we cannot write CSS. 
-   Therefore, we have to use inline styles and hope that the browser supports animating borderImage? 
-   But note: borderImage is not animatable in a way that Framer Motion can handle easily.
-
-   Given the complexity, and since this is an example, we'll change the requirement slightly for the code: 
-        We'll use a solid color border for the selected state and for hover, and note that in a real app we'd replace it with a gradient via CSS.
-
-   However, the problem says "gradient", so we must try to represent it.
-
-   Another idea: use a gradient as a background on an outer circle and then mask it? Too complex.
-
-   Considering the instructions, I think we are allowed to use inline styles and we'll animate the border color to a gradient by using a conic-gradient? 
-   But note: we cannot animate a conic-gradient smoothly with Framer Motion because it's not a single value.
-
-   We'll do a simplification: 
-        Instead of a gradient border, we'll use a solid color that changes to one of the gradient colors on hover/selected, and then note that in production we'd use a CSS gradient.
-
-   But the problem says "gradient border", so to be faithful, we'll try to simulate it by having multiple borders? 
-   Not practical.
-
-   After research: Framer Motion can animate the `border` property if we break it into border-width, border-style, border-color? 
-   But border-color is a single color, not gradient.
-
-   Given the constraints of the problem (JSX only, and we are to write the component), we'll use a solid color for the border in the example and note that the gradient would be implemented via CSS in a real app. 
-   However, the problem says "gradient border", so we must include the word "gradient" in our style? 
-
-   Alternatively, we can use a CSS variable and set it via style? But we don't have CSS.
-
-   I think for the sake of completing the example, we'll use a solid color and mention that in a real app we'd replace it with a gradient. 
-   But the problem says "JSX only", meaning we cannot write CSS, so we have to do it in JSX.
-
-   Let's look at Framer Motion's capabilities: 
-        It can animate any CSS property that is a number, color, or string (if the string is one of a set of known values). 
-        Gradient is a string, but it's complex and not interpolable.
-
-   So we cannot animate between two gradients smoothly? 
-
-   Therefore, we'll do:
-        - We'll have two states: 
-            state1: border: '2px solid #eee'
-            state2: border: '2px solid #ff9a9e'   (one color of the gradient, as a placeholder)
-
-   And we'll note that in a real app, we would use a CSS class for the gradient border and toggle that class (which Framer Motion can handle by animating the opacity of a pseudo-element? but we don't have pseudo-elements in inline style).
-
-   Given the above, and since the problem is about the structure of the onboarding flow, we'll focus on the logic and use a solid color for the border as a stand-in for the gradient.
-
-   We'll use:
-        defaultBorder: '2px solid #eee'
-        selectedOrHoveredBorder: '2px solid #4cc9f0'   (a blue color as example)
-
-   And we'll animate the border color and the scale.
-
-   Steps for the role card:
-
-        <motion.div
-          initial={{ scale: 1, borderColor: '#eee' }}
-          whileHover={{
-            scale: 1.05,
-            borderColor: selectedRole === role ? '#4cc9f0' : '#4cc9f0', // if selected, we want to keep the selected color even on hover? 
-            // Actually, if selected, we don't want to change on hover? Or we want to show a slightly different effect?
-            // Let's say: if selected, we keep the selected color and maybe a slight pulse? 
-            // But for simplicity, we'll have:
-            //   if selected: borderColor is always the selected color (and we don't change on hover) 
-            //   if not selected: on hover we change to the hover color.
-          }}
-          whileTap={{ scale: 0.95 }}
-        >
-          ... 
-        </motion.div>
-
-   However, we cannot conditionally set the whileHover based on selectedRole inside the motion div because it's a prop that is set at render.
-
-   So we have to do:
-
-        const borderColor = selectedRole === role ? '#4cc9f0' : (isHovered ? '#4cc9f0' : '#eee');
-
-   But we don't have isHovered state per card.
-
-   We can use Framer Motion's `onHoverStart` and `onHoverEnd` to set a hover state? But that would require state per card.
-
-   Alternatively, we can use the `whileHover` prop to always animate to a hover state, and then override the borderColor if selected? 
-   But note: the whileHover prop is applied regardless of selected state.
-
-   We want:
-        - If selected: we want the border to be the selected color (and we don't want it to change on hover? or we want a subtle hover effect on top?).
-
-   Let's define:
-        - Selected state: borderColor = '#4cc9f0' (and scale=1.05)
-        - Not selected, not hovered: borderColor = '#eee', scale=1
-        - Not selected, hovered: borderColor = '#4cc9f0', scale=1.05
-
-   We can achieve this by having the whileHover always set to the hover state (scale 1.05 and borderColor '#4cc9f0'), 
-   and then if the card is selected, we set the initial and animate to the selected state (which is the same as the hover state) so it stays.
-
-   But note: when selected, we don't want it to scale down on tap? 
-        whileTap: we can set it to scale 0.95 only when not selected? 
-        Or we can have: 
-            whileTap: { scale: selectedRole === role ? 1 : 0.95 }
-
-   However, Framer Motion's whileTap is applied regardless.
-
-   We can do:
-
-        <motion.div
-          initial={{ scale: 1, borderColor: '#eee' }}
-          animate={{
-            scale: selectedRole === role ? 1.05 : 1,
-            borderColor: selectedRole === role ? '#4cc9f0' : '#eee'
-          }}
-          whileHover={{
-            scale: 1.05,
-            borderColor: '#4cc9f0'
-          }}
-          whileTap={{ scale: 0.
+          {step === 4 ? 'Get Started' : 'Continue'}
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </div>
+  )
+}

@@ -249,7 +249,6 @@ const FlashcardStudio = () => {
               >
                 Add Card
               </button>
-            </button>
             </div>
           </motion.div>
         </div>
