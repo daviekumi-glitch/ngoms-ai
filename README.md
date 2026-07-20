@@ -1,57 +1,66 @@
-# 🧠 Ngoms AI
-### *Learn Smarter. Not Harder.*
+# Ngoms AI — Premium AI Education Platform
 
-A next-generation AI-powered education platform built for students, lecturers, and institutions. Premium dark UI, real AI features, gamification, and multi-language support.
+Learn Smarter. Not Harder.
 
-## 🚀 Tech Stack
-- **Frontend:** React + Vite + Tailwind CSS + Framer Motion
-- **Backend:** Base44 (entities, auth, file storage, AI)
-- **AI:** Document-aware chat tutor, auto-quiz generation, flashcard AI, smart notes
-- **Languages:** English, French, Chichewa, Swahili, Portuguese
+## Tech Stack
+- React 18 + Vite + Tailwind CSS
+- Firebase (Firestore, Auth, Storage) — APK backend
+- Base44 API — Web backend
+- Capacitor — Android APK wrapper
+- Recharts — Analytics charts
 
-## ✨ Features
-- 📄 Document Library with AI summaries and health scoring
-- 🤖 AI Chat Tutor with document context and citations
-- 🃏 Flashcard Studio with spaced repetition
-- 📝 Quiz Engine (MCQ, T/F, short answer, fill-in-the-blank)
-- 📓 Smart Notes (summary, bullet, Cornell, mind map)
-- 📅 Study Planner with AI scheduling
-- 📊 Progress & Analytics with achievement badges
-- 🏆 XP Leaderboard
-- 🌍 Multi-language (EN, FR, Chichewa, Swahili, PT)
-- 🔐 Admin Panel with 25+ CRUD tabs
+## Project Structure
+```
+src/
+  App.jsx              # Routes + maintenance gate
+  main.jsx             # Entry point
+  context/
+    AppContext.jsx     # Global state + CRUD + user
+  lib/
+    firebase.js        # Firebase config
+    firebaseApi.js     # API layer (Firebase + Base44)
+    seedData.js        # First-run Firestore seeding
+  pages/
+    Dashboard.jsx      # Home with stats, streak, courses
+    ChatTutor.jsx      # AI chat with quick prompts
+    Flashcards.jsx     # Deck creation + spaced repetition study
+    QuizEngine.jsx     # AI + stored quizzes with scoring
+    Documents.jsx      # Study material library
+    SmartNotes.jsx     # AI-generated notes (3 formats)
+    StudyPlanner.jsx   # Calendar + study sessions
+    Analytics.jsx      # Progress charts and stats
+    Leaderboard.jsx    # Top learners with badges
+    Profile.jsx        # User profile + achievements
+    Settings.jsx       # 7 settings sections
+    Notifications.jsx   # Announcements + notifications
+    Onboarding.jsx     # Welcome flow
+    SplashScreen.jsx   # App launch screen
+  components/
+    layout/
+      Layout.jsx       # Desktop sidebar + mobile bottom nav
+  styles/
+    globals.css       # Dark theme + glassmorphism + utilities
+```
 
-## 🎨 Design System
-- Dark-first UI: Deep Navy `#0A0F1E`
-- Accent: Electric Blue `#3B82F6` + Violet `#7C3AED`
-- Glassmorphism cards + gradient buttons
-- Font: Inter / Plus Jakarta Sans
-- Mobile-first, React Native-feel in browser
+## Development
+```bash
+npm install
+npm run dev      # Start dev server
+npm run build    # Production build
+```
 
-## 📱 Pages
-1. Splash Screen → Onboarding (4 steps)
-2. Dashboard (personalized, streaks, AI insight)
-3. Document Library
-4. AI Chat Tutor
-5. Flashcard Studio
-6. Quiz Engine
-7. Smart Notes
-8. Study Planner
-9. Progress & Analytics
-10. Leaderboard
-11. Settings + Admin Panel
+## Firebase Setup
+1. Project: ngoms-ai-edfa5
+2. Enable: Email/Password + Anonymous auth
+3. Deploy firestore.rules to Firestore
 
-## 🏗️ Entities
-UserProfile, Document, ChatSession, ChatMessage, Flashcard, Quiz, GeneratedNote, StudyEvent, StudySchedule, Achievement, StudySession, Annotation
+## APK Build
+Add `.github/workflows/build-apk.yml` to trigger APK builds via GitHub Actions.
+See APK_BUILD_INSTRUCTIONS.md for the workflow file content.
 
-## 🤖 Automation
-This repo is automatically updated every hour by Vesper (Base44 AI Agent):
-- Builds missing features and UI
-- Fixes bugs and errors
-- Adds security layers
-- Expands Admin Panel
-- Monitors platform health
-- Pushes all changes to this repo
-
-## 📄 License
-MIT © 2026 Ngoms AI
+## Design System
+- Base: #0A0F1E (dark navy)
+- Glassmorphism: backdrop-blur + translucent surfaces
+- Primary: #3B82F6 (blue)
+- Accent: #7C3AED (violet)
+- Cards: glass class with rounded-2xl/3xl

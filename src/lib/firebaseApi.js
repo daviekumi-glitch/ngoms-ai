@@ -1,6 +1,6 @@
 import {
-  collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
-  deleteDoc, query, where, onSnapshot, serverTimestamp, Timestamp
+  collection, doc, getDoc, getDocs, addDoc, updateDoc,
+  deleteDoc, onSnapshot, serverTimestamp, Timestamp
 } from 'firebase/firestore'
 import { db, COLLECTION_MAP } from './firebase'
 import { seedFirestore } from './seedData'
@@ -22,7 +22,6 @@ async function base44Api(action, extra = {}) {
   }
 }
 
-// Use Firebase when in APK, or when VITE_USE_FIREBASE is true
 const useFirebase = isNative || import.meta.env.VITE_USE_FIREBASE === 'true'
 
 function docToObject(d) {
@@ -38,7 +37,6 @@ function docToObject(d) {
 
 export async function fetchAll() {
   if (useFirebase) {
-    // Seed if empty (first launch)
     await seedFirestore()
 
     const result = {}
@@ -101,10 +99,7 @@ export async function createRecord(collectionKey, data) {
 export async function updateRecord(collectionKey, id, patch) {
   if (useFirebase) {
     const colName = COLLECTION_MAP[collectionKey] || collectionKey
-    await updateDoc(doc(db, colName, id), {
-      ...patch,
-      updated_date: serverTimestamp(),
-    })
+    await updateDoc(doc(db, colName, id), { ...patch, updated_date: serverTimestamp() })
     return { success: true }
   }
   return base44Api('update', { collection: collectionKey, id, data: patch })
