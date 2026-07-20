@@ -3,11 +3,9 @@ import {
   deleteDoc, query, where, onSnapshot, serverTimestamp, Timestamp
 } from 'firebase/firestore'
 import { db, COLLECTION_MAP } from './firebase'
+import { seedFirestore } from './seedData'
 
-// Check if we're running in the APK (Capacitor) or web
 const isNative = typeof window !== 'undefined' && window.Capacitor?.isNative
-
-// Base44 API fallback (for web preview/development)
 const BASE44_API = 'https://vesper-ecdb8354.base44.app/functions/ngomsApi'
 
 async function base44Api(action, extra = {}) {
@@ -19,19 +17,17 @@ async function base44Api(action, extra = {}) {
     })
     return await res.json()
   } catch (err) {
-    console.error('Base44 API error:', err)
+    console.error('API error:', err)
     return { success: false, error: err.message }
   }
 }
 
-// Use Firebase when in APK, Base44 API when in browser (for live preview)
+// Use Firebase when in APK, or when VITE_USE_FIREBASE is true
 const useFirebase = isNative || import.meta.env.VITE_USE_FIREBASE === 'true'
 
-// Convert Firestore doc to plain object
 function docToObject(d) {
   if (!d.exists()) return null
   const data = d.data()
-  // Convert Firestore timestamps to ISO strings
   Object.keys(data).forEach(key => {
     if (data[key] instanceof Timestamp) {
       data[key] = data[key].toDate().toISOString()
@@ -40,10 +36,11 @@ function docToObject(d) {
   return { id: d.id, ...data }
 }
 
-// ===== API FUNCTIONS =====
-
 export async function fetchAll() {
   if (useFirebase) {
+    // Seed if empty (first launch)
+    await seedFirestore()
+
     const result = {}
     const collections = [
       'app_settings', 'app_banner', 'courses', 'flashcard_decks',
@@ -62,7 +59,6 @@ export async function fetchAll() {
       }
     }))
 
-    // Map to expected keys
     return {
       success: true,
       appSettings: result.app_settings?.[0] || null,
@@ -123,16 +119,12 @@ export async function deleteRecord(collectionKey, id) {
   return base44Api('delete', { collection: collectionKey, id })
 }
 
-// Real-time listener for a collection (Firebase only)
 export function subscribeToCollection(collectionKey, callback) {
-  if (!useFirebase) {
-    console.warn('Real-time updates only available with Firebase')
-    return () => {}
-  }
+  if (!useFirebase) return () => {}
   const colName = COLLECTION_MAP[collectionKey] || collectionKey
   return onSnapshot(collection(db, colName), (snap) => {
     callback(snap.docs.map(docToObject))
   })
 }
 
-export { useFirebase }
+export { useFirebase, seedFirestore }
