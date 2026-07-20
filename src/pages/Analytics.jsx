@@ -5,9 +5,9 @@ import { useApp } from '../context/AppContext'
 export default function Analytics() {
   const { quizzes, courses, flashcardDecks, documents, user } = useApp()
 
-  const activeQuizzes = (quizzes || []).filter(q => q.status === 'active').length
-  const activeCourses = (courses || []).filter(c => c.status === 'published').length
-  const totalCards = (flashcardDecks || []).reduce((a, d) => a + (d.cards || 0), 0)
+  const activeQuizzes = (quizzes || []).filter(q => q.status === 'Active' || q.status === 'active').length
+  const activeCourses = (courses || []).filter(c => c.status === 'Active' || c.status === 'active').length
+  const totalCards = (flashcardDecks || []).reduce((a, d) => a + (Array.isArray(d.cards) ? d.cards.length : (typeof d.cards === 'number' ? d.cards : 0)), 0)
   const totalDocs = (documents || []).length
 
   const stats = [

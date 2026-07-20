@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   User, Bell, Lock, Palette, CreditCard, HelpCircle, LogOut, Globe,
-  ChevronRight, Check, Moon, Sun, Volume2, Mail, MessageSquare,
-  Smartphone, Wifi, Star, ToggleLeft, Save
+  ChevronRight, ChevronLeft, Check, Moon, Sun, Volume2, Mail, MessageSquare,
+  Smartphone, Wifi, Star, ToggleLeft, Save, Shield
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
@@ -22,7 +22,6 @@ export default function Settings() {
     { id: 'help', icon: HelpCircle, label: 'Help & Support', color: 'from-orange-500 to-amber-500' },
   ]
 
-  // Load preferences from localStorage
   const [prefs, setPrefs] = useState(() => {
     const saved = localStorage.getItem('ngoms_prefs')
     return saved ? JSON.parse(saved) : {
@@ -40,7 +39,7 @@ export default function Settings() {
 
   const renderSection = () => {
     switch (section) {
-      case 'subscription': return <SubscriptionSection plans={plans} goBack={() => setSection('main')} />
+      case 'subscription': return <SubscriptionSection plans={plans} goBack={() => setSection('main')} user={user} />
       case 'account': return <AccountSection goBack={() => setSection('main')} />
       case 'notifications': return <NotificationsSection prefs={prefs} updatePref={updatePref} goBack={() => setSection('main')} />
       case 'privacy': return <PrivacySection prefs={prefs} updatePref={updatePref} goBack={() => setSection('main')} />
@@ -61,21 +60,20 @@ export default function Settings() {
         <p className="text-white/40 text-sm mt-0.5">Manage your Ngoms AI experience</p>
       </div>
 
-      {/* Profile card */}
       <div className="glass p-4 rounded-2xl mb-5 flex items-center gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-violet flex items-center justify-center text-xl font-black text-white">D</div>
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-violet flex items-center justify-center text-xl font-black text-white">
+          {(user?.name || '?')[0]}
+        </div>
         <div className="flex-1">
-          <p className="text-white font-bold text-sm">Davie Kuminga</p>
-          <p className="text-white/40 text-xs">daviekumi@gmail.com</p>
-          <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[11px] font-semibold">Premium</span>
+          <p className="text-white font-bold text-sm">{user?.name || 'Student'}</p>
+          <p className="text-white/40 text-xs">{user?.email || ''}</p>
+          <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[11px] font-semibold">{user?.plan || 'Free'}</span>
         </div>
       </div>
 
-      {/* Settings items */}
       <div className="space-y-2">
         {settingsItems.map((item) => (
-          <button key={item.id}
-            onClick={() => setSection(item.id)}
+          <button key={item.id} onClick={() => setSection(item.id)}
             className="w-full glass p-3.5 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform">
             <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center`}>
               <item.icon size={16} className="text-white" />
@@ -86,20 +84,19 @@ export default function Settings() {
         ))}
       </div>
 
-      {/* App info */}
       <div className="mt-5 text-center">
         <p className="text-white/30 text-xs">{appSettings?.appName || 'Ngoms AI'} v{appSettings?.version || '1.0.0'}</p>
         <p className="text-white/20 text-[11px] mt-0.5">{appSettings?.tagline}</p>
       </div>
 
-      <button onClick={() => { signOut(); nav("/onboarding") }} className="w-full mt-4 glass p-3.5 rounded-2xl flex items-center justify-center gap-2 text-red-400 active:scale-[0.98] transition-transform">
+      <button onClick={() => { signOut(); nav('/onboarding') }}
+        className="w-full mt-4 glass p-3.5 rounded-2xl flex items-center justify-center gap-2 text-red-400 active:scale-[0.98] transition-transform">
         <LogOut size={16} /> <span className="text-sm font-semibold">Sign Out</span>
       </button>
     </div>
   )
 }
 
-// ===== ACCOUNT SECTION =====
 function AccountSection({ goBack }) {
   const { user, updateUser } = useApp()
   const [name, setName] = useState(user?.name || '')
@@ -111,32 +108,24 @@ function AccountSection({ goBack }) {
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
       <Header title="Account & Profile" onBack={goBack} />
-
-      {/* Avatar */}
       <div className="flex flex-col items-center mb-6">
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-violet flex items-center justify-center text-4xl font-black text-white mb-3 relative">
-          {(name || "?")[0]}
-          {editing && (
-            <button className="absolute bottom-0 right-0 w-8 h-8 rounded-xl bg-white text-navy-900 flex items-center justify-center shadow-lg">
-              <Smartphone size={14} />
-            </button>
-          )}
+        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-violet flex items-center justify-center text-4xl font-black text-white mb-3">
+          {(name || '?')[0]}
         </div>
         {editing ? (
           <input value={name} onChange={e => setName(e.target.value)} className="input-field text-center max-w-xs" />
         ) : (
           <p className="text-white font-bold">{name}</p>
         )}
-        <span className="inline-block mt-1 px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold">{user?.plan || "Free"} Member</span>
+        <span className="inline-block mt-1 px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold">{user?.plan || 'Free'} Member</span>
       </div>
-
       <div className="glass p-5 rounded-2xl space-y-4">
         {[
-          { icon: User, label: 'Full Name', key: 'name', val: name, set: setName, type: 'text' },
-          { icon: Mail, label: 'Email Address', key: 'email', val: email, set: setEmail, type: 'email' },
-          { icon: Smartphone, label: 'Phone Number', key: 'phone', val: phone, set: setPhone, type: 'tel' },
+          { icon: User, label: 'Full Name', val: name, set: setName, type: 'text' },
+          { icon: Mail, label: 'Email Address', val: email, set: setEmail, type: 'email' },
+          { icon: Smartphone, label: 'Phone Number', val: phone, set: setPhone, type: 'tel' },
         ].map(f => (
-          <div key={f.key}>
+          <div key={f.label}>
             <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase tracking-wide">{f.label}</label>
             <div className="relative">
               <f.icon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
@@ -151,11 +140,7 @@ function AccountSection({ goBack }) {
             className={`input-field resize-none ${!editing ? 'opacity-60' : ''}`} />
         </div>
       </div>
-
-      <button onClick={() => {
-        if (editing) { updateUser({ name, email, phone, bio }) }
-        setEditing(!editing)
-      }}
+      <button onClick={() => { if (editing) { updateUser({ name, email, phone, bio }) }; setEditing(!editing) }}
         className={`w-full mt-4 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
           editing ? 'bg-gradient-to-r from-primary to-violet text-white' : 'glass text-white/70'
         }`}>
@@ -165,7 +150,6 @@ function AccountSection({ goBack }) {
   )
 }
 
-// ===== NOTIFICATIONS SECTION =====
 function NotificationsSection({ prefs, updatePref, goBack }) {
   const items = [
     { key: 'notifPush', icon: Bell, label: 'Push Notifications', desc: 'Receive alerts on your device' },
@@ -184,15 +168,13 @@ function NotificationsSection({ prefs, updatePref, goBack }) {
       </div>
       <div className="glass p-4 rounded-2xl mt-4">
         <p className="text-white/40 text-xs flex items-center gap-2">
-          <Volume2 size={14} /> Sound effects for notifications are {prefs.soundEffects ? 'enabled' : 'disabled'}.
-          You can change this in Appearance settings.
+          <Volume2 size={14} /> Sound effects are {prefs.soundEffects ? 'enabled' : 'disabled'}. Change in Appearance settings.
         </p>
       </div>
     </div>
   )
 }
 
-// ===== PRIVACY SECTION =====
 function PrivacySection({ prefs, updatePref, goBack }) {
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
@@ -230,7 +212,6 @@ function PrivacySection({ prefs, updatePref, goBack }) {
   )
 }
 
-// ===== APPEARANCE SECTION =====
 function AppearanceSection({ prefs, updatePref, goBack }) {
   const [theme, setTheme] = useState('dark')
   const sizes = [
@@ -238,17 +219,15 @@ function AppearanceSection({ prefs, updatePref, goBack }) {
     { key: 'medium', label: 'Medium', size: 'text-sm' },
     { key: 'large', label: 'Large', size: 'text-base' },
   ]
-
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
       <Header title="Appearance & Theme" onBack={goBack} />
-      {/* Theme selection */}
       <div className="glass p-5 rounded-2xl mb-3">
         <h3 className="text-white font-bold text-sm mb-4">Theme Mode</h3>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { key: 'dark', icon: Moon, label: 'Dark Mode', active: true },
-            { key: 'light', icon: Sun, label: 'Light Mode', active: false },
+            { key: 'dark', icon: Moon, label: 'Dark Mode' },
+            { key: 'light', icon: Sun, label: 'Light Mode' },
           ].map(t => (
             <button key={t.key} onClick={() => setTheme(t.key)}
               className={`p-4 rounded-2xl flex flex-col items-center gap-2 transition-all ${
@@ -260,8 +239,6 @@ function AppearanceSection({ prefs, updatePref, goBack }) {
           ))}
         </div>
       </div>
-
-      {/* Font size */}
       <div className="glass p-5 rounded-2xl mb-3">
         <h3 className="text-white font-bold text-sm mb-4">Font Size</h3>
         <div className="grid grid-cols-3 gap-2">
@@ -276,8 +253,6 @@ function AppearanceSection({ prefs, updatePref, goBack }) {
           ))}
         </div>
       </div>
-
-      {/* Toggles */}
       <div className="space-y-2">
         <ToggleCard icon={ToggleLeft} label="Reduce Motion" desc="Minimize animations and transitions" value={prefs.reduceMotion} onChange={v => updatePref('reduceMotion', v)} />
         <ToggleCard icon={Volume2} label="Sound Effects" desc="Play sounds for interactions and alerts" value={prefs.soundEffects} onChange={v => updatePref('soundEffects', v)} />
@@ -286,8 +261,7 @@ function AppearanceSection({ prefs, updatePref, goBack }) {
   )
 }
 
-// ===== SUBSCRIPTION SECTION =====
-function SubscriptionSection({ plans, goBack }) {
+function SubscriptionSection({ plans, goBack, user }) {
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       <Header title="Subscription Plans" onBack={goBack} />
@@ -296,34 +270,38 @@ function SubscriptionSection({ plans, goBack }) {
           <CreditCard size={24} className="text-white" />
         </div>
         <div className="flex-1">
-          <p className="text-white font-bold text-sm">Current Plan: Premium</p>
-          <p className="text-white/40 text-xs">Renews on Aug 19, 2026</p>
+          <p className="text-white font-bold text-sm">Current Plan: {user?.plan || 'Free'}</p>
+          <p className="text-white/40 text-xs">{user?.plan === 'Premium' ? 'Renews on Aug 19, 2026' : 'Upgrade for full access'}</p>
         </div>
         <span className="px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-semibold">Active</span>
       </div>
       <div className="grid md:grid-cols-3 gap-3">
-        {(plans || []).map((p) => (
-          <div key={p.id} className={`glass rounded-2xl p-5 ${p.name === 'Premium' ? 'ring-2 ring-primary/40' : ''}`}>
-            {p.name === 'Premium' && <span className="text-xs font-bold text-primary mb-2 block">RECOMMENDED</span>}
-            <h3 className="text-white font-black text-lg">{p.name}</h3>
-            <p className="text-2xl font-black gradient-text mt-1">{p.price}</p>
-            <p className="text-white/30 text-xs">per {p.period}</p>
-            <div className="mt-3 space-y-2">
-              {(p.features || '').split(',').map((f, j) => (
-                <div key={j} className="flex items-start gap-2">
-                  <Check size={14} className="text-primary mt-0.5 shrink-0" />
-                  <span className="text-white/60 text-xs">{f.trim()}</span>
-                </div>
-              ))}
+        {(plans || []).map((p) => {
+          const features = Array.isArray(p.features) ? p.features : (typeof p.features === 'string' ? p.features.split(',') : [])
+          const isCurrent = (user?.plan || 'Free') === p.name
+          return (
+            <div key={p.id} className={`glass rounded-2xl p-5 ${p.name === 'Premium' ? 'ring-2 ring-primary/40' : ''}`}>
+              {p.name === 'Premium' && <span className="text-xs font-bold text-primary mb-2 block">RECOMMENDED</span>}
+              <h3 className="text-white font-black text-lg">{p.name}</h3>
+              <p className="text-2xl font-black gradient-text mt-1">{p.price}</p>
+              <p className="text-white/30 text-xs">per {p.period}</p>
+              <div className="mt-3 space-y-2">
+                {features.map((f, j) => (
+                  <div key={j} className="flex items-start gap-2">
+                    <Check size={14} className="text-primary mt-0.5 shrink-0" />
+                    <span className="text-white/60 text-xs">{typeof f === 'string' ? f.trim() : f}</span>
+                  </div>
+                ))}
+              </div>
+              <button className={`w-full mt-4 py-2.5 rounded-xl font-bold text-sm active:scale-95 transition-transform ${
+                isCurrent ? 'glass text-white/40' :
+                p.name === 'Free' ? 'glass text-white/40' : 'bg-gradient-to-r from-primary to-violet text-white'
+              }`}>
+                {isCurrent ? 'Current Plan' : `Upgrade to ${p.name}`}
+              </button>
             </div>
-            <button className={`w-full mt-4 py-2.5 rounded-xl font-bold text-sm active:scale-95 transition-transform ${
-              p.name === 'Premium' ? 'bg-gradient-to-r from-primary to-violet text-white' :
-              p.name === 'Free' ? 'glass text-white/40' : 'glass text-white/60'
-            }`}>
-              {p.name === 'Free' ? 'Current Plan' : p.name === 'Premium' ? 'Current Plan' : `Upgrade to ${p.name}`}
-            </button>
-          </div>
-        ))}
+          )
+        })}
       </div>
       <div className="glass p-4 rounded-2xl mt-4">
         <h3 className="text-white font-bold text-sm mb-3">Payment Method</h3>
@@ -340,7 +318,6 @@ function SubscriptionSection({ plans, goBack }) {
   )
 }
 
-// ===== LANGUAGE SECTION =====
 function LanguageSection({ prefs, updatePref, goBack }) {
   const languages = [
     { code: 'en', name: 'English', flag: '🇬🇧' },
@@ -358,7 +335,6 @@ function LanguageSection({ prefs, updatePref, goBack }) {
     { code: 'gh', name: 'Ghana', flag: '🇬🇭' },
     { code: 'eg', name: 'Egypt', flag: '🇪🇬' },
   ]
-
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
       <Header title="Language & Region" onBack={goBack} />
@@ -392,7 +368,6 @@ function LanguageSection({ prefs, updatePref, goBack }) {
   )
 }
 
-// ===== HELP SECTION =====
 function HelpSection({ goBack, appSettings }) {
   const faqs = [
     { q: 'How do I create flashcards?', a: 'Go to Flashcards tab, click the + button, and start adding cards to your deck.' },
@@ -401,7 +376,6 @@ function HelpSection({ goBack, appSettings }) {
     { q: 'How do I cancel my subscription?', a: 'Go to Subscription & Billing in Settings and click Cancel, or contact support.' },
   ]
   const [openFaq, setOpenFaq] = useState(null)
-
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
       <Header title="Help & Support" onBack={goBack} />
@@ -415,14 +389,11 @@ function HelpSection({ goBack, appSettings }) {
                 <span className="text-white/80 text-sm font-medium text-left">{f.q}</span>
                 <ChevronRight size={16} className={`text-white/30 transition-transform ${openFaq === i ? 'rotate-90' : ''}`} />
               </button>
-              {openFaq === i && (
-                <p className="text-white/40 text-xs mt-2 pt-2 border-t border-white/5">{f.a}</p>
-              )}
+              {openFaq === i && <p className="text-white/40 text-xs mt-2 pt-2 border-t border-white/5">{f.a}</p>}
             </div>
           ))}
         </div>
       </div>
-
       <div className="glass p-5 rounded-2xl mb-3">
         <h3 className="text-white font-bold text-sm mb-3">Contact Us</h3>
         <div className="space-y-2">
@@ -438,7 +409,6 @@ function HelpSection({ goBack, appSettings }) {
           </button>
         </div>
       </div>
-
       <div className="glass p-4 rounded-2xl text-center">
         <p className="text-white/30 text-xs">Ngoms AI v{appSettings?.version || '1.0.0'}</p>
         <p className="text-white/20 text-[11px] mt-1">Made with 💜 in Malawi</p>
@@ -447,7 +417,6 @@ function HelpSection({ goBack, appSettings }) {
   )
 }
 
-// ===== SHARED COMPONENTS =====
 function Header({ title, onBack }) {
   return (
     <div className="flex items-center gap-3 mb-5">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Zap, CheckCircle, XCircle, RotateCcw, ChevronRight, Target, Loader } from 'lucide-react'
+import { Zap, CheckCircle, XCircle, RotateCcw, ChevronRight, Target, Loader, Sparkles } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const API_URL = 'https://vesper-ecdb8354.base44.app/functions/ngomsApi'
@@ -22,35 +22,42 @@ export default function QuizEngine() {
     setAnswers({})
     setSubmitted(false)
     setError('')
+
+    // If quiz has real questions stored, use them directly
+    if (Array.isArray(quiz.questions) && quiz.questions.length > 0) {
+      setQuestions(quiz.questions)
+      return
+    }
+
+    // Otherwise try AI generation
     setGenerating(true)
     try {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'ai_quiz', payload: { topic: quiz.title, difficulty: quiz.difficulty, count: quiz.questions || 5 } }),
+        body: JSON.stringify({ action: 'ai_quiz', payload: { topic: quiz.title, difficulty: quiz.difficulty, count: 5 } }),
       })
       const json = await res.json()
       if (json.success && json.questions) {
         setQuestions(json.questions)
       } else {
-        // Fallback to generated questions
-        setError('AI quiz generation failed. Using sample questions.')
-        setQuestions(Array.from({ length: quiz.questions || 5 }, (_, i) => ({
-          q: `Question ${i + 1} about ${quiz.title}`,
-          options: ['Option A', 'Option B', 'Option C', 'Option D'],
-          answer: i % 4,
-        })))
+        setError('AI quiz generation unavailable. Using sample questions.')
+        setQuestions([
+          { q: `What is the main topic of ${quiz.title}?`, options: ['Option A', 'Option B', 'Option C', 'Option D'], answer: 0 },
+          { q: `Which best describes ${quiz.title}?`, options: ['Option A', 'Option B', 'Option C', 'Option D'], answer: 1 },
+          { q: `What is a key concept in ${quiz.title}?`, options: ['Option A', 'Option B', 'Option C', 'Option D'], answer: 2 },
+        ])
       }
     } catch {
-      setQuestions(Array.from({ length: quiz.questions || 5 }, (_, i) => ({
-        q: `Question ${i + 1} about ${quiz.title}`,
-        options: ['Option A', 'Option B', 'Option C', 'Option D'],
-        answer: i % 4,
-      })))
+      setQuestions([
+        { q: `What is the main topic of ${quiz.title}?`, options: ['Option A', 'Option B', 'Option C', 'Option D'], answer: 0 },
+        { q: `Which best describes ${quiz.title}?`, options: ['Option A', 'Option B', 'Option C', 'Option D'], answer: 1 },
+      ])
     }
     setGenerating(false)
   }
 
+  // Quiz in progress
   if (active && !submitted) {
     if (generating) {
       return (
@@ -105,6 +112,7 @@ export default function QuizEngine() {
     )
   }
 
+  // Quiz results
   if (active && submitted) {
     const total = questions.length
     const score = questions.filter((q, i) => answers[i] === q.answer).length
@@ -130,7 +138,6 @@ export default function QuizEngine() {
           </div>
         </div>
 
-        {/* Answer review */}
         <div className="space-y-2 text-left">
           {questions.map((q, i) => (
             <div key={i} className="glass p-3 rounded-xl">
@@ -152,6 +159,7 @@ export default function QuizEngine() {
     )
   }
 
+  // Quiz list
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       <div className="mb-5">
@@ -163,31 +171,34 @@ export default function QuizEngine() {
         <div className="space-y-3">
           {[1,2,3].map(i => <div key={i} className="h-20 rounded-2xl bg-white/5 animate-pulse" />)}
         </div>
-      ) : (quizzes || []).filter(q => q.status === 'active').length === 0 ? (
+      ) : (quizzes || []).filter(q => q.status === 'Active' || q.status === 'active').length === 0 ? (
         <div className="text-center py-20">
           <Zap size={48} className="text-white/10 mx-auto mb-3" />
           <p className="text-white/30 text-sm">No quizzes available yet</p>
         </div>
       ) : (
         <div className="space-y-2.5">
-          {(quizzes || []).filter(q => q.status === 'active').map((q) => (
-            <div key={q.id} onClick={() => startQuiz(q)}
-              className="glass p-4 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform cursor-pointer">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0">
-                <Zap size={20} className="text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-white font-semibold text-sm">{q.title}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-white/40 text-xs">{q.questions || 5} questions</span>
-                  <span className="text-white/20 text-xs">·</span>
-                  <span className="text-white/40 text-xs">{q.difficulty}</span>
-                  {q.course && (<><span className="text-white/20 text-xs">·</span><span className="text-white/40 text-xs">{q.course}</span></>)}
+          {(quizzes || []).filter(q => q.status === 'Active' || q.status === 'active').map((q) => {
+            const qCount = Array.isArray(q.questions) ? q.questions.length : (q.questions || 5)
+            return (
+              <div key={q.id} onClick={() => startQuiz(q)}
+                className="glass p-4 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform cursor-pointer">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0">
+                  <Zap size={20} className="text-white" />
                 </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold text-sm">{q.title}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-white/40 text-xs">{qCount} questions</span>
+                    <span className="text-white/20 text-xs">·</span>
+                    <span className="text-white/40 text-xs">{q.difficulty}</span>
+                    {q.course && (<><span className="text-white/20 text-xs">·</span><span className="text-white/40 text-xs">{q.course}</span></>)}
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-white/30" />
               </div>
-              <ChevronRight size={18} className="text-white/30" />
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

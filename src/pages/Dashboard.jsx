@@ -13,8 +13,8 @@ export default function Dashboard() {
     { icon: Layers, label: 'Cards', color: 'from-orange-500 to-amber-500', path: '/flashcards', featureKey: 'flashcards' },
   ]
 
-  const activeBadges = (badges || []).filter(b => b.status === 'active').length
-  const activeQuizzes = (quizzes || []).filter(q => q.status === 'active').length
+  const activeBadges = (badges || []).filter(b => b.status === 'Active' || b.status === 'active').length
+  const activeQuizzes = (quizzes || []).filter(q => q.status === 'Active' || q.status === 'active').length
   const stats = [
     { label: 'Study Hours', value: '24.5h', sub: 'This week', icon: Clock, color: 'text-primary' },
     { label: 'Quiz Score', value: '87%', sub: 'Average', icon: Zap, color: 'text-violet' },

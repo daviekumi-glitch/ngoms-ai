@@ -24,15 +24,14 @@ export default function Flashcards() {
     await create('flashcards', {
       title: deckName,
       author: user?.name || 'User',
-      cards: deckCards.length,
+      cards: deckCards,
       views: 0,
-      status: 'published',
+      status: 'Active',
     })
-    // Save cards to localStorage for this deck
-    const deckId = `deck_${Date.now()}`
-    localStorage.setItem(`ngoms_deck_${deckId}`, JSON.stringify(deckCards))
     setDeckName('')
     setDeckCards([])
+    setCardFront('')
+    setCardBack('')
     setCreating(false)
     setShowCreate(false)
   }
@@ -44,13 +43,25 @@ export default function Flashcards() {
     setCardBack('')
   }
 
-  // Deck view
+  // Deck study view
   if (activeDeck) {
-    const cards = Array.from({ length: activeDeck.cards || 5 }, (_, i) => ({
-      front: `Concept ${i + 1}: ${activeDeck.title}`,
-      back: `Explanation for concept ${i + 1}. This is the detailed answer for ${activeDeck.title}.`,
-    }))
+    const cards = Array.isArray(activeDeck.cards) ? activeDeck.cards : []
     const card = cards[cardIdx] || cards[0]
+
+    if (cards.length === 0) {
+      return (
+        <div className="p-4 md:p-6 max-w-3xl mx-auto">
+          <div className="flex items-center gap-3 mb-5">
+            <button onClick={() => { setActiveDeck(null); setCardIdx(0); setFlipped(false) }}
+              className="glass p-2 rounded-xl text-white/60 active:scale-90 transition-transform">
+              <ChevronRight size={18} className="rotate-180" />
+            </button>
+            <h1 className="text-xl font-black text-white">{activeDeck.title}</h1>
+          </div>
+          <div className="text-center py-20 text-white/30 text-sm">No cards in this deck</div>
+        </div>
+      )
+    }
 
     return (
       <div className="p-4 md:p-6 max-w-3xl mx-auto">
@@ -123,24 +134,27 @@ export default function Flashcards() {
         </div>
       ) : (
         <div className="space-y-2.5">
-          {flashcardDecks.map((d) => (
-            <div key={d.id} onClick={() => { setActiveDeck(d); setCardIdx(0); setFlipped(false) }}
-              className="glass p-4 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform cursor-pointer">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shrink-0">
-                <Layers size={20} className="text-white" />
-              </div>
-              <div className="flex-1">
-                <p className="text-white font-semibold text-sm">{d.title}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-white/40 text-xs">{d.cards || 0} cards</span>
-                  <span className="text-white/20 text-xs">·</span>
-                  <span className="text-white/40 text-xs">{d.views || 0} views</span>
-                  {d.author && (<><span className="text-white/20 text-xs">·</span><span className="text-white/40 text-xs">{d.author}</span></>)}
+          {flashcardDecks.map((d) => {
+            const cardCount = Array.isArray(d.cards) ? d.cards.length : (typeof d.cards === 'number' ? d.cards : 0)
+            return (
+              <div key={d.id} onClick={() => { setActiveDeck(d); setCardIdx(0); setFlipped(false) }}
+                className="glass p-4 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform cursor-pointer">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shrink-0">
+                  <Layers size={20} className="text-white" />
                 </div>
+                <div className="flex-1">
+                  <p className="text-white font-semibold text-sm">{d.title}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-white/40 text-xs">{cardCount} cards</span>
+                    <span className="text-white/20 text-xs">·</span>
+                    <span className="text-white/40 text-xs">{d.views || 0} views</span>
+                    {d.author && (<><span className="text-white/20 text-xs">·</span><span className="text-white/40 text-xs">{d.author}</span></>)}
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-white/30" />
               </div>
-              <ChevronRight size={18} className="text-white/30" />
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
