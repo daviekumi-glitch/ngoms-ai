@@ -20,14 +20,35 @@ export default function Onboarding() {
   const subjectList = ['Biology', 'Mathematics', 'Physics', 'Chemistry', 'English', 'History', 'Geography', 'Computer Science']
   const languages = ['English', 'French', 'Chichewa', 'Swahili', 'Portuguese']
 
+  const toggleSubject = (s) => {
+    setSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
+  }
+
   const next = () => {
     if (step < 3) setStep(step + 1)
-    else nav('/')
+    else {
+      // Save preferences to localStorage
+      localStorage.setItem('ngoms_user', JSON.stringify({
+        name: 'Davie Kuminga',
+        email: 'daviekumi@gmail.com',
+        phone: '+265 991 234 567',
+        bio: `${role} studying ${subjects.join(', ') || 'various subjects'}.`,
+        plan: 'Premium',
+        role: role || 'Student',
+        xp: 0,
+        streak: 0,
+        subjects,
+        hoursPerWeek: hours,
+        examDate,
+        language,
+      }))
+      localStorage.setItem('ngoms_onboarded', 'true')
+      nav('/')
+    }
   }
 
   return (
     <div className="min-h-screen bg-navy-900 flex flex-col">
-      {/* Progress bar */}
       <div className="flex gap-1.5 p-4 pb-0">
         {[0,1,2,3].map(i => (
           <div key={i} className={`flex-1 h-1.5 rounded-full transition-colors ${i <= step ? 'bg-gradient-to-r from-primary to-violet' : 'bg-white/10'}`} />
@@ -39,38 +60,34 @@ export default function Onboarding() {
           {step === 0 && (
             <div>
               <div className="text-center mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-violet flex items-center justify-center mx-auto mb-3 shadow-lg shadow-primary/30">
-                  <Sparkles size={28} className="text-white" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-violet flex items-center justify-center mx-auto mb-3">
+                  <Sparkles size={30} className="text-white" />
                 </div>
                 <h1 className="text-2xl font-black text-white">Welcome to Ngoms AI</h1>
-                <p className="text-white/40 text-sm mt-1">Let's set up your learning journey</p>
+                <p className="text-white/40 text-sm mt-1">Let's personalize your learning</p>
               </div>
-              <p className="text-white/60 text-xs font-semibold mb-2.5 uppercase tracking-wide">Choose your role</p>
-              <div className="space-y-2">
-                {roles.map(r => (
-                  <button key={r.id} onClick={() => setRole(r.id)}
-                    className={`w-full p-4 rounded-2xl flex items-center gap-3 transition-all ${role === r.id ? 'bg-gradient-to-r from-primary to-violet' : 'glass'}`}>
-                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${r.color} flex items-center justify-center`}>
-                      <r.icon size={20} className="text-white" />
-                    </div>
-                    <span className={`text-sm font-semibold ${role === r.id ? 'text-white' : 'text-white/70'}`}>{r.id}</span>
-                    {role === r.id && <Check size={18} className="text-white ml-auto" />}
-                  </button>
-                ))}
-              </div>
+              <p className="text-white/60 text-sm mb-3 text-center">I am your AI study companion. I'll help you learn smarter, not harder.</p>
+              <button onClick={next} className="w-full py-3.5 rounded-xl bg-gradient-to-r from-primary to-violet text-white font-bold active:scale-95 transition-transform">
+                Get Started
+              </button>
             </div>
           )}
 
           {step === 1 && (
             <div>
-              <h1 className="text-2xl font-black text-white mb-1">Select Subjects</h1>
-              <p className="text-white/40 text-sm mb-4">Choose what you want to study</p>
-              <div className="grid grid-cols-2 gap-2">
-                {subjectList.map(s => (
-                  <button key={s} onClick={() => setSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
-                    className={`p-3 rounded-xl text-sm font-semibold transition-all ${subjects.includes(s) ? 'bg-gradient-to-r from-primary to-violet text-white' : 'glass text-white/60'}`}>
-                    {s}
-                    {subjects.includes(s) && <Check size={14} className="inline ml-1" />}
+              <h1 className="text-xl font-black text-white mb-1">What describes you?</h1>
+              <p className="text-white/40 text-sm mb-4">This helps us customize your experience</p>
+              <div className="space-y-2">
+                {roles.map(r => (
+                  <button key={r.id} onClick={() => setRole(r.id)}
+                    className={`w-full p-4 rounded-2xl flex items-center gap-3 transition-all ${
+                      role === r.id ? 'bg-gradient-to-r from-primary to-violet text-white' : 'glass text-white/70'
+                    }`}>
+                    <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${r.color} flex items-center justify-center`}>
+                      <r.icon size={22} className="text-white" />
+                    </div>
+                    <span className="font-semibold text-sm flex-1 text-left">{r.id}</span>
+                    {role === r.id && <Check size={18} />}
                   </button>
                 ))}
               </div>
@@ -79,52 +96,66 @@ export default function Onboarding() {
 
           {step === 2 && (
             <div>
-              <h1 className="text-2xl font-black text-white mb-1">Study Goals</h1>
-              <p className="text-white/40 text-sm mb-4">Set your daily target</p>
-              <div className="glass p-4 rounded-2xl mb-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock size={18} className="text-primary" />
-                  <span className="text-white/70 text-sm font-semibold">Hours per day</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <input type="range" min="1" max="12" value={hours} onChange={e => setHours(+e.target.value)}
-                    className="flex-1 accent-primary" />
-                  <span className="text-2xl font-black gradient-text w-12 text-center">{hours}h</span>
-                </div>
+              <h1 className="text-xl font-black text-white mb-1">Pick your subjects</h1>
+              <p className="text-white/40 text-sm mb-4">Choose what you want to study</p>
+              <div className="flex flex-wrap gap-2">
+                {subjectList.map(s => (
+                  <button key={s} onClick={() => toggleSubject(s)}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      subjects.includes(s) ? 'bg-gradient-to-r from-primary to-violet text-white' : 'glass text-white/50'
+                    }`}>
+                    {subjects.includes(s) && <Check size={12} className="inline mr-1" />}{s}
+                  </button>
+                ))}
               </div>
-              <div className="glass p-4 rounded-2xl">
-                <div className="flex items-center gap-2 mb-3">
-                  <Calendar size={18} className="text-violet" />
-                  <span className="text-white/70 text-sm font-semibold">Exam date (optional)</span>
+              <div className="mt-6">
+                <label className="text-white/50 text-xs font-semibold mb-2 block uppercase">Study hours per week</label>
+                <div className="flex items-center gap-3">
+                  <input type="range" min="1" max="20" value={hours} onChange={e => setHours(parseInt(e.target.value))} className="flex-1 accent-primary" />
+                  <span className="text-white font-bold text-sm w-12">{hours}h</span>
                 </div>
-                <input type="date" value={examDate} onChange={e => setExamDate(e.target.value)}
-                  className="input-field text-sm" />
               </div>
             </div>
           )}
 
           {step === 3 && (
             <div>
-              <h1 className="text-2xl font-black text-white mb-1">Language</h1>
-              <p className="text-white/40 text-sm mb-4">Choose your preferred language</p>
-              <div className="space-y-2">
-                {languages.map(l => (
-                  <button key={l} onClick={() => setLanguage(l)}
-                    className={`w-full p-4 rounded-2xl flex items-center gap-3 transition-all ${language === l ? 'bg-gradient-to-r from-primary to-violet' : 'glass'}`}>
-                    <Globe size={20} className={language === l ? 'text-white' : 'text-white/40'} />
-                    <span className={`text-sm font-semibold ${language === l ? 'text-white' : 'text-white/70'}`}>{l}</span>
-                    {language === l && <Check size={18} className="text-white ml-auto" />}
-                  </button>
-                ))}
+              <h1 className="text-xl font-black text-white mb-1">Final touches</h1>
+              <p className="text-white/40 text-sm mb-4">Just a few more details</p>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase flex items-center gap-1"><Calendar size={12} /> Exam Date (optional)</label>
+                  <input type="date" value={examDate} onChange={e => setExamDate(e.target.value)} className="input-field" />
+                </div>
+                <div>
+                  <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase flex items-center gap-1"><Globe size={12} /> Language</label>
+                  <div className="flex flex-wrap gap-2">
+                    {languages.map(l => (
+                      <button key={l} onClick={() => setLanguage(l)}
+                        className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                          language === l ? 'bg-gradient-to-r from-primary to-violet text-white' : 'glass text-white/50'
+                        }`}>{l}</button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
-          <button onClick={next}
-            className="w-full mt-6 py-3.5 rounded-xl bg-gradient-to-r from-primary to-violet text-white font-bold active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
-            {step === 3 ? 'Start Learning' : 'Continue'}
-            <ArrowRight size={16} />
-          </button>
+          {step > 0 && (
+            <div className="flex gap-2 mt-6">
+              {step > 0 && step < 4 && (
+                <button onClick={() => setStep(step - 1)} className="flex-1 glass py-3 rounded-xl text-white/60 font-semibold text-sm active:scale-95 transition-transform">
+                  Back
+                </button>
+              )}
+              <button onClick={next}
+                disabled={step === 1 && !role}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-primary to-violet text-white font-bold text-sm active:scale-95 transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
+                {step === 3 ? 'Start Learning' : 'Continue'} <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

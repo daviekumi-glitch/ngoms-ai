@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { Upload, MessageCircle, Zap, Layers, Book, Star, ChevronRight, Flame, Sparkles, TrendingUp, Award, Clock } from 'lucide-react'
+import { Upload, MessageCircle, Zap, Layers, Star, ChevronRight, Flame, Sparkles, TrendingUp, Award, Clock } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function Dashboard() {
-  const { banner, features, appSettings, loading, isFeatureEnabled, courses } = useApp()
+  const { banner, appSettings, loading, isFeatureEnabled, courses, user, badges, quizzes } = useApp()
   const nav = useNavigate()
 
   const quickActions = [
@@ -13,12 +13,20 @@ export default function Dashboard() {
     { icon: Layers, label: 'Cards', color: 'from-orange-500 to-amber-500', path: '/flashcards', featureKey: 'flashcards' },
   ]
 
+  const activeBadges = (badges || []).filter(b => b.status === 'active').length
+  const activeQuizzes = (quizzes || []).filter(q => q.status === 'active').length
   const stats = [
     { label: 'Study Hours', value: '24.5h', sub: 'This week', icon: Clock, color: 'text-primary' },
     { label: 'Quiz Score', value: '87%', sub: 'Average', icon: Zap, color: 'text-violet' },
     { label: 'Cards Mastered', value: '142', sub: 'All time', icon: Layers, color: 'text-emerald-400' },
-    { label: 'XP Points', value: '2,840', sub: 'This month', icon: Star, color: 'text-amber-400' },
+    { label: 'XP Points', value: (user?.xp || 2840).toLocaleString(), sub: 'This month', icon: Star, color: 'text-amber-400' },
   ]
+
+  // Stable progress per course using course id hash
+  const courseProgress = (c) => {
+    const hash = (c.id || c.title || '').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0)
+    return 30 + (hash % 50)
+  }
 
   if (loading) {
     return (
@@ -34,13 +42,11 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
-      {/* Header */}
       <div className="mb-5">
-        <p className="text-white/40 text-sm mb-0.5">Good morning</p>
+        <p className="text-white/40 text-sm mb-0.5">Good morning, {user?.name?.split(' ')[0] || 'there'}</p>
         <h1 className="text-2xl font-black text-white">Ready to <span className="gradient-text">learn smarter?</span></h1>
       </div>
 
-      {/* Banner */}
       {banner?.active && (
         <div
           onClick={() => nav(banner.actionRoute || '/settings')}
@@ -54,12 +60,11 @@ export default function Dashboard() {
               <p className="text-white font-bold text-sm">{banner.title}</p>
               <p className="text-white/70 text-xs truncate">{banner.subtitle}</p>
             </div>
-            <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-lg text-white text-xs font-semibold whitespace-nowrap">{banner.actionText}</span>
+            {banner.actionText && <span className="bg-white/20 backdrop-blur px-3 py-1.5 rounded-lg text-white text-xs font-semibold whitespace-nowrap">{banner.actionText}</span>}
           </div>
         </div>
       )}
 
-      {/* Stats grid - fixed layout */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {stats.map((s) => (
           <div key={s.label} className="glass p-3.5 rounded-2xl">
@@ -70,7 +75,6 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Quick Actions - fixed grid */}
       <div className="grid grid-cols-4 gap-2.5 mb-5">
         {quickActions.filter(a => isFeatureEnabled(a.featureKey)).map((a) => (
           <button key={a.label} onClick={() => nav(a.path)}
@@ -83,25 +87,23 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Streak card - fixed bars */}
       <div className="glass p-4 rounded-2xl mb-5">
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
             <Flame size={18} className="text-orange-400" />
             <span className="text-white font-bold text-sm">Daily Streak</span>
           </div>
-          <span className="text-xl font-black gradient-text">7 days</span>
+          <span className="text-xl font-black gradient-text">{user?.streak || 7} days</span>
         </div>
         <div className="flex gap-1.5">
           {['M','T','W','T','F','S','S'].map((d, i) => (
-            <div key={i} className="flex-1 h-10 rounded-lg bg-gradient-to-t from-orange-500 to-amber-400 flex items-end justify-center pb-1">
-              <span className="text-white/80 text-[10px] font-bold">{d}</span>
+            <div key={i} className={`flex-1 h-10 rounded-lg flex items-end justify-center pb-1 ${i < (user?.streak || 7) % 7 || (user?.streak || 7) >= 7 ? 'bg-gradient-to-t from-orange-500 to-amber-400' : 'bg-white/5'}`}>
+              <span className={`text-[10px] font-bold ${i < (user?.streak || 7) % 7 || (user?.streak || 7) >= 7 ? 'text-white/80' : 'text-white/30'}`}>{d}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* AI Insight card */}
       <div className="glass p-4 rounded-2xl mb-5 border border-primary/20">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-violet flex items-center justify-center shrink-0">
@@ -109,36 +111,39 @@ export default function Dashboard() {
           </div>
           <div className="flex-1">
             <p className="text-white font-semibold text-sm mb-1">AI Insight</p>
-            <p className="text-white/50 text-xs leading-relaxed">Your biology scores improved 23% this week. Keep the streak going — you're 3 days from the Streak King badge!</p>
+            <p className="text-white/50 text-xs leading-relaxed">You have {activeQuizzes} quizzes available and {activeBadges} badges to unlock. Keep your {user?.streak || 7}-day streak going!</p>
           </div>
         </div>
       </div>
 
-      {/* Continue Learning - from real courses */}
-      <p className="text-white/60 text-xs font-semibold mb-2.5 uppercase tracking-wide">Continue Learning</p>
-      <div className="space-y-2.5">
-        {(courses || []).slice(0, 3).map((c) => {
-          const progress = Math.floor(Math.random() * 60) + 30
-          return (
-            <div key={c.id} onClick={() => nav('/documents')}
-              className="glass p-3.5 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform cursor-pointer">
-              <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${c.color || 'from-primary to-violet'} flex items-center justify-center text-xl shrink-0`}>
-                {c.icon || '📚'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold text-sm truncate">{c.title}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-primary to-violet" style={{ width: `${progress}%` }} />
+      {(courses || []).length > 0 && (
+        <>
+          <p className="text-white/60 text-xs font-semibold mb-2.5 uppercase tracking-wide">Continue Learning</p>
+          <div className="space-y-2.5">
+            {courses.slice(0, 4).map((c) => {
+              const progress = courseProgress(c)
+              return (
+                <div key={c.id} onClick={() => nav('/documents')}
+                  className="glass p-3.5 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform cursor-pointer">
+                  <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${c.color || 'from-primary to-violet'} flex items-center justify-center text-xl shrink-0`}>
+                    {c.icon || '📚'}
                   </div>
-                  <span className="text-white/40 text-[11px]">{progress}%</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm truncate">{c.title}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-primary to-violet" style={{ width: `${progress}%` }} />
+                      </div>
+                      <span className="text-white/40 text-[11px]">{progress}%</span>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} className="text-white/30 shrink-0" />
                 </div>
-              </div>
-              <ChevronRight size={16} className="text-white/30 shrink-0" />
-            </div>
-          )
-        })}
-      </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }

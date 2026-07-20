@@ -1,24 +1,32 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts'
 import { Clock, Zap, Target, TrendingUp } from 'lucide-react'
-
-const weeklyHours = [
-  { day: 'Mon', hours: 2 }, { day: 'Tue', hours: 3 },
-  { day: 'Wed', hours: 1.5 }, { day: 'Thu', hours: 4 },
-  { day: 'Fri', hours: 3.5 }, { day: 'Sat', hours: 5 },
-  { day: 'Sun', hours: 2.5 },
-]
-
-const quizScores = [
-  { week: 'W1', score: 78 }, { week: 'W2', score: 82 },
-  { week: 'W3', score: 85 }, { week: 'W4', score: 90 },
-]
+import { useApp } from '../context/AppContext'
 
 export default function Analytics() {
+  const { quizzes, courses, flashcardDecks, documents, user } = useApp()
+
+  const activeQuizzes = (quizzes || []).filter(q => q.status === 'active').length
+  const activeCourses = (courses || []).filter(c => c.status === 'published').length
+  const totalCards = (flashcardDecks || []).reduce((a, d) => a + (d.cards || 0), 0)
+  const totalDocs = (documents || []).length
+
   const stats = [
     { label: 'Total Hours', value: '21.5h', icon: Clock, color: 'text-primary' },
     { label: 'Avg Score', value: '84%', icon: Target, color: 'text-violet' },
-    { label: 'Quizzes', value: '12', icon: Zap, color: 'text-emerald-400' },
+    { label: 'Quizzes', value: activeQuizzes, icon: Zap, color: 'text-emerald-400' },
     { label: 'Trend', value: '+12%', icon: TrendingUp, color: 'text-amber-400' },
+  ]
+
+  const weeklyHours = [
+    { day: 'Mon', hours: 2 }, { day: 'Tue', hours: 3 },
+    { day: 'Wed', hours: 1.5 }, { day: 'Thu', hours: 4 },
+    { day: 'Fri', hours: 3.5 }, { day: 'Sat', hours: 5 },
+    { day: 'Sun', hours: 2.5 },
+  ]
+
+  const quizScores = [
+    { week: 'W1', score: 78 }, { week: 'W2', score: 82 },
+    { week: 'W3', score: 85 }, { week: 'W4', score: 90 },
   ]
 
   return (
@@ -28,7 +36,6 @@ export default function Analytics() {
         <p className="text-white/40 text-sm mt-0.5">Your learning progress</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {stats.map((s) => (
           <div key={s.label} className="glass p-3.5 rounded-2xl">
@@ -39,35 +46,48 @@ export default function Analytics() {
         ))}
       </div>
 
-      {/* Weekly hours chart */}
       <div className="glass p-4 rounded-2xl mb-4">
-        <p className="text-white font-semibold text-sm mb-3">Weekly Study Hours</p>
-        <div style={{ width: '100%', height: 180 }}>
-          <ResponsiveContainer>
-            <BarChart data={weeklyHours}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-              <XAxis dataKey="day" stroke="#ffffff40" fontSize={11} />
-              <YAxis stroke="#ffffff40" fontSize={11} />
-              <Tooltip contentStyle={{ background: '#0A0F1E', border: '1px solid #ffffff20', borderRadius: 12 }} />
-              <Bar dataKey="hours" fill="#3B82F6" radius={[6,6,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <h3 className="text-white font-bold text-sm mb-3">Weekly Study Hours</h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={weeklyHours}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis dataKey="day" stroke="rgba(255,255,255,0.3)" fontSize={11} />
+            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} />
+            <Tooltip contentStyle={{ background: '#0F1629', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} />
+            <Bar dataKey="hours" fill="#3B82F6" radius={[8, 8, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
-      {/* Quiz scores chart */}
-      <div className="glass p-4 rounded-2xl">
-        <p className="text-white font-semibold text-sm mb-3">Quiz Score Trend</p>
-        <div style={{ width: '100%', height: 180 }}>
-          <ResponsiveContainer>
-            <LineChart data={quizScores}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-              <XAxis dataKey="week" stroke="#ffffff40" fontSize={11} />
-              <YAxis stroke="#ffffff40" fontSize={11} domain={[60, 100]} />
-              <Tooltip contentStyle={{ background: '#0A0F1E', border: '1px solid #ffffff20', borderRadius: 12 }} />
-              <Line type="monotone" dataKey="score" stroke="#7C3AED" strokeWidth={2} dot={{ fill: '#7C3AED', r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+      <div className="glass p-4 rounded-2xl mb-4">
+        <h3 className="text-white font-bold text-sm mb-3">Quiz Score Trend</h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={quizScores}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis dataKey="week" stroke="rgba(255,255,255,0.3)" fontSize={11} />
+            <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} domain={[60, 100]} />
+            <Tooltip contentStyle={{ background: '#0F1629', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} />
+            <Line type="monotone" dataKey="score" stroke="#7C3AED" strokeWidth={3} dot={{ fill: '#7C3AED', r: 4 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="glass p-3 rounded-2xl text-center">
+          <p className="text-2xl font-black text-white">{activeCourses}</p>
+          <p className="text-white/40 text-xs">Active Courses</p>
+        </div>
+        <div className="glass p-3 rounded-2xl text-center">
+          <p className="text-2xl font-black text-white">{totalCards}</p>
+          <p className="text-white/40 text-xs">Flashcards</p>
+        </div>
+        <div className="glass p-3 rounded-2xl text-center">
+          <p className="text-2xl font-black text-white">{totalDocs}</p>
+          <p className="text-white/40 text-xs">Documents</p>
+        </div>
+        <div className="glass p-3 rounded-2xl text-center">
+          <p className="text-2xl font-black text-white">{(user?.xp || 2840).toLocaleString()}</p>
+          <p className="text-white/40 text-xs">XP Points</p>
         </div>
       </div>
     </div>

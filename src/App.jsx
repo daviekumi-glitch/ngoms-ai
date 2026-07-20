@@ -27,7 +27,7 @@ function MaintenanceGate({ children }) {
         <div className="text-center max-w-sm">
           <div className="text-6xl mb-4">🔧</div>
           <h1 className="text-2xl font-black text-white mb-2">Under Maintenance</h1>
-          <p className="text-white/50 text-sm">{appSettings.maintenanceMessage}</p>
+          <p className="text-white/50 text-sm">{appSettings.maintenanceMessage || 'We will be back soon.'}</p>
         </div>
       </div>
     )
@@ -37,7 +37,7 @@ function MaintenanceGate({ children }) {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true)
-  useEffect(() => { setTimeout(() => setShowSplash(false), 3000) }, [])
+  useEffect(() => { setTimeout(() => setShowSplash(false), 2500) }, [])
   if (showSplash) return <SplashScreen />
 
   return (

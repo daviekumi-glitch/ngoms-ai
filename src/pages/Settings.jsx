@@ -8,7 +8,7 @@ import {
 import { useApp } from '../context/AppContext'
 
 export default function Settings() {
-  const { plans, appSettings, adminSession } = useApp()
+  const { plans, appSettings, adminSession, signOut, user, updateUser } = useApp()
   const nav = useNavigate()
   const [section, setSection] = useState('main')
 
@@ -104,7 +104,7 @@ export default function Settings() {
         <p className="text-white/20 text-[11px] mt-0.5">{appSettings?.tagline}</p>
       </div>
 
-      <button className="w-full mt-4 glass p-3.5 rounded-2xl flex items-center justify-center gap-2 text-red-400 active:scale-[0.98] transition-transform">
+      <button onClick={() => { signOut(); nav("/onboarding") }} className="w-full mt-4 glass p-3.5 rounded-2xl flex items-center justify-center gap-2 text-red-400 active:scale-[0.98] transition-transform">
         <LogOut size={16} /> <span className="text-sm font-semibold">Sign Out</span>
       </button>
     </div>
@@ -113,10 +113,11 @@ export default function Settings() {
 
 // ===== ACCOUNT SECTION =====
 function AccountSection({ goBack }) {
-  const [name, setName] = useState('Davie Kuminga')
-  const [email, setEmail] = useState('daviekumi@gmail.com')
-  const [phone, setPhone] = useState('+265 991 234 567')
-  const [bio, setBio] = useState('Student at University of Malawi. Passionate about AI and education.')
+  const { user, updateUser } = useApp()
+  const [name, setName] = useState(user?.name || '')
+  const [email, setEmail] = useState(user?.email || '')
+  const [phone, setPhone] = useState(user?.phone || '')
+  const [bio, setBio] = useState(user?.bio || '')
   const [editing, setEditing] = useState(false)
 
   return (
@@ -126,7 +127,7 @@ function AccountSection({ goBack }) {
       {/* Avatar */}
       <div className="flex flex-col items-center mb-6">
         <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-violet flex items-center justify-center text-4xl font-black text-white mb-3 relative">
-          D
+          {(name || "?")[0]}
           {editing && (
             <button className="absolute bottom-0 right-0 w-8 h-8 rounded-xl bg-white text-navy-900 flex items-center justify-center shadow-lg">
               <Smartphone size={14} />
@@ -138,7 +139,7 @@ function AccountSection({ goBack }) {
         ) : (
           <p className="text-white font-bold">{name}</p>
         )}
-        <span className="inline-block mt-1 px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold">Premium Member</span>
+        <span className="inline-block mt-1 px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold">{user?.plan || "Free"} Member</span>
       </div>
 
       <div className="glass p-5 rounded-2xl space-y-4">
@@ -163,7 +164,10 @@ function AccountSection({ goBack }) {
         </div>
       </div>
 
-      <button onClick={() => setEditing(!editing)}
+      <button onClick={() => {
+        if (editing) { updateUser({ name, email, phone, bio }) }
+        setEditing(!editing)
+      }}
         className={`w-full mt-4 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
           editing ? 'bg-gradient-to-r from-primary to-violet text-white' : 'glass text-white/70'
         }`}>

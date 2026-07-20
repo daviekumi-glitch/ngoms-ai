@@ -20,6 +20,22 @@ async function api(action, extra = {}) {
   }
 }
 
+// Load user profile from localStorage
+function loadUser() {
+  const saved = localStorage.getItem('ngoms_user')
+  if (saved) return JSON.parse(saved)
+  return {
+    name: 'Davie Kuminga',
+    email: 'daviekumi@gmail.com',
+    phone: '+265 991 234 567',
+    bio: 'Student at University of Malawi. Passionate about AI and education.',
+    plan: 'Premium',
+    role: 'Student',
+    xp: 2840,
+    streak: 7,
+  }
+}
+
 export function AppProvider({ children }) {
   const [data, setData] = useState({
     banner: null, appSettings: null, features: [], announcements: [],
@@ -29,9 +45,12 @@ export function AppProvider({ children }) {
     logs: [], messages: [],
   })
   const [loading, setLoading] = useState(true)
-  const [adminSession, setAdminSession] = useState(null)
+  const [adminSession, setAdminSession] = useState(() => {
+    const saved = sessionStorage.getItem('ngoms_admin')
+    return saved ? JSON.parse(saved) : null
+  })
+  const [user, setUser] = useState(loadUser)
 
-  // Fetch all data from backend on mount
   const refresh = useCallback(async () => {
     setLoading(true)
     const res = await api('get_app_config')
@@ -53,55 +72,68 @@ export function AppProvider({ children }) {
 
   useEffect(() => { refresh() }, [refresh])
 
-  // CRUD operations that call the real backend
+  // CRUD operations
   const create = useCallback(async (col, item) => {
     const res = await api('create', { collection: col, data: item })
     if (res.success) {
-      setData(s => ({ ...s, [col]: [...(s[col] || []), res.data] }))
+      // Map collection to state key
+      const stateKey = col === 'flashcards' ? 'flashcardDecks' : col
+      setData(s => ({ ...s, [stateKey]: [...(s[stateKey] || []), res.data] }))
       return res.data
     }
+    return null
   }, [])
 
   const update = useCallback(async (col, id, patch) => {
     const res = await api('update', { collection: col, id, data: patch })
     if (res.success) {
-      setData(s => ({ ...s, [col]: (s[col] || []).map(x => x.id === id ? { ...x, ...patch } : x) }))
+      const stateKey = col === 'flashcards' ? 'flashcardDecks' : col
+      setData(s => ({ ...s, [stateKey]: (s[stateKey] || []).map(x => x.id === id ? { ...x, ...patch } : x) }))
     }
   }, [])
 
   const remove = useCallback(async (col, id) => {
     const res = await api('delete', { collection: col, id })
     if (res.success) {
-      setData(s => ({ ...s, [col]: (s[col] || []).filter(x => x.id !== id) }))
+      const stateKey = col === 'flashcards' ? 'flashcardDecks' : col
+      setData(s => ({ ...s, [stateKey]: (s[stateKey] || []).filter(x => x.id !== id) }))
     }
   }, [])
 
   const setBanner = useCallback(async (b) => {
     if (data.banner?.id) {
       await update('banner', data.banner.id, b)
+      setData(s => ({ ...s, banner: { ...s.banner, ...b } }))
     } else {
-      await create('banner', b)
+      const created = await create('banner', b)
+      setData(s => ({ ...s, banner: created }))
     }
   }, [data.banner, update, create])
 
   const setSettings = useCallback(async (p) => {
     if (data.appSettings?.id) {
       await update('settings', data.appSettings.id, p)
+      setData(s => ({ ...s, appSettings: { ...s.appSettings, ...p } }))
     } else {
-      await create('settings', p)
+      const created = await create('settings', p)
+      setData(s => ({ ...s, appSettings: created }))
     }
   }, [data.appSettings, update, create])
 
   const adminLogin = useCallback(async (email, pass) => {
     const res = await api('admin_login', { payload: { email, password: pass } })
     if (res.success) {
+      sessionStorage.setItem('ngoms_admin', JSON.stringify(res.session))
       setAdminSession(res.session)
       return true
     }
     return false
   }, [])
 
-  const adminLogout = useCallback(() => setAdminSession(null), [])
+  const adminLogout = useCallback(() => {
+    sessionStorage.removeItem('ngoms_admin')
+    setAdminSession(null)
+  }, [])
 
   const toggleFeature = useCallback(async (id) => {
     const f = data.features.find(ft => ft.id === id)
@@ -120,12 +152,30 @@ export function AppProvider({ children }) {
     return f ? f.enabled : true
   }, [data.features])
 
+  const updateUser = useCallback((updates) => {
+    setUser(prev => {
+      const next = { ...prev, ...updates }
+      localStorage.setItem('ngoms_user', JSON.stringify(next))
+      return next
+    })
+  }, [])
+
+  const signOut = useCallback(() => {
+    localStorage.removeItem('ngoms_user')
+    localStorage.removeItem('ngoms_prefs')
+    localStorage.removeItem('ngoms_notes')
+    localStorage.removeItem('ngoms_planner')
+    sessionStorage.removeItem('ngoms_admin')
+    setUser(loadUser())
+    setAdminSession(null)
+  }, [])
+
   return (
     <AppCtx.Provider value={{
-      ...data, loading, adminSession,
+      ...data, loading, adminSession, user,
       create, update, remove, setBanner, setSettings,
       adminLogin, adminLogout, toggleFeature, pushNotification,
-      isFeatureEnabled, refresh,
+      isFeatureEnabled, refresh, updateUser, signOut,
     }}>
       {children}
     </AppCtx.Provider>

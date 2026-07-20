@@ -177,7 +177,7 @@ function TabContent({ tab }) {
       }
     },
     flashcards: {
-      title: 'Flashcard Decks', collection: 'flashcards',
+      title: 'Flashcard Decks', collection: 'flashcardDecks',
       columns: [{key:'title',label:'Deck Title'},{key:'author',label:'Author'},{key:'views',label:'Views'},{key:'status',label:'Status'}],
       fields: [
         {key:'title',label:'Deck Title',type:'text'},

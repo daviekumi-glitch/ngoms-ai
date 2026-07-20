@@ -121,7 +121,7 @@ export default function ChatTutor() {
       {/* Input - fixed bottom */}
       <div className="glass border-t border-white/5 px-4 py-3 pb-4 shrink-0">
         <div className="flex items-end gap-2">
-          <button className="glass p-2.5 rounded-xl text-white/40 active:scale-90 transition-transform">
+          <button onClick={() => alert("File upload coming soon! For now, paste text directly.")} className="glass p-2.5 rounded-xl text-white/40 active:scale-90 transition-transform">
             <Paperclip size={16} />
           </button>
           <div className="flex-1 relative">
