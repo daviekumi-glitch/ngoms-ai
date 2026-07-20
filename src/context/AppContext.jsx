@@ -1,24 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { fetchAll, createRecord, updateRecord, deleteRecord, useFirebase } from '../lib/firebaseApi'
 
 const AppCtx = createContext(null)
 export const useApp = () => useContext(AppCtx)
-
-const API_URL = 'https://vesper-ecdb8354.base44.app/functions/ngomsApi'
-
-async function api(action, extra = {}) {
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...extra }),
-    })
-    const json = await res.json()
-    return json
-  } catch (err) {
-    console.error('API error:', err)
-    return { success: false, error: err.message }
-  }
-}
 
 // Load user profile from localStorage
 function loadUser() {
@@ -46,10 +30,11 @@ export function AppProvider({ children }) {
   })
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(loadUser)
+  const [isFirebase] = useState(useFirebase)
 
   const refresh = useCallback(async () => {
     setLoading(true)
-    const res = await api('get_app_config')
+    const res = await fetchAll()
     if (res.success) {
       setData({
         banner: res.banner, appSettings: res.appSettings,
@@ -68,9 +53,9 @@ export function AppProvider({ children }) {
 
   useEffect(() => { refresh() }, [refresh])
 
-  // CRUD operations (used by features like documents, notes etc.)
+  // CRUD operations — work with both Firebase and Base44
   const create = useCallback(async (col, item) => {
-    const res = await api('create', { collection: col, data: item })
+    const res = await createRecord(col, item)
     if (res.success) {
       const stateKey = col === 'flashcards' ? 'flashcardDecks' : col
       setData(s => ({ ...s, [stateKey]: [...(s[stateKey] || []), res.data] }))
@@ -80,7 +65,7 @@ export function AppProvider({ children }) {
   }, [])
 
   const update = useCallback(async (col, id, patch) => {
-    const res = await api('update', { collection: col, id, data: patch })
+    const res = await updateRecord(col, id, patch)
     if (res.success) {
       const stateKey = col === 'flashcards' ? 'flashcardDecks' : col
       setData(s => ({ ...s, [stateKey]: (s[stateKey] || []).map(x => x.id === id ? { ...x, ...patch } : x) }))
@@ -88,7 +73,7 @@ export function AppProvider({ children }) {
   }, [])
 
   const remove = useCallback(async (col, id) => {
-    const res = await api('delete', { collection: col, id })
+    const res = await deleteRecord(col, id)
     if (res.success) {
       const stateKey = col === 'flashcards' ? 'flashcardDecks' : col
       setData(s => ({ ...s, [stateKey]: (s[stateKey] || []).filter(x => x.id !== id) }))
@@ -150,7 +135,7 @@ export function AppProvider({ children }) {
 
   return (
     <AppCtx.Provider value={{
-      ...data, loading, user,
+      ...data, loading, user, isFirebase,
       create, update, remove, setBanner, setSettings,
       toggleFeature, pushNotification,
       isFeatureEnabled, refresh, updateUser, signOut,
