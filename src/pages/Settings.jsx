@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   User, Bell, Lock, Palette, CreditCard, HelpCircle, LogOut, Globe,
-  ChevronRight, Check, Shield, Moon, Sun, Volume2, Mail, MessageSquare,
-  Smartphone, Wifi, Star, ChevronLeft, ToggleLeft, Save
+  ChevronRight, Check, Moon, Sun, Volume2, Mail, MessageSquare,
+  Smartphone, Wifi, Star, ToggleLeft, Save
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 export default function Settings() {
-  const { plans, appSettings, adminSession, signOut, user, updateUser } = useApp()
+  const { plans, appSettings, signOut, user, updateUser } = useApp()
   const nav = useNavigate()
   const [section, setSection] = useState('main')
 
@@ -84,18 +84,6 @@ export default function Settings() {
             <ChevronRight size={16} className="text-white/30" />
           </button>
         ))}
-      </div>
-
-      {/* Admin Panel Access */}
-      <div className="mt-3">
-        <button onClick={() => nav(adminSession ? '/admin' : '/admin/login')}
-          className="w-full glass p-3.5 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform border border-red-500/20">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-violet flex items-center justify-center">
-            <Shield size={16} className="text-white" />
-          </div>
-          <span className="text-white/80 text-sm font-medium flex-1 text-left">Admin Panel</span>
-          <ChevronRight size={16} className="text-white/30" />
-        </button>
       </div>
 
       {/* App info */}

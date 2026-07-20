@@ -45,10 +45,6 @@ export function AppProvider({ children }) {
     logs: [], messages: [],
   })
   const [loading, setLoading] = useState(true)
-  const [adminSession, setAdminSession] = useState(() => {
-    const saved = sessionStorage.getItem('ngoms_admin')
-    return saved ? JSON.parse(saved) : null
-  })
   const [user, setUser] = useState(loadUser)
 
   const refresh = useCallback(async () => {
@@ -72,11 +68,10 @@ export function AppProvider({ children }) {
 
   useEffect(() => { refresh() }, [refresh])
 
-  // CRUD operations
+  // CRUD operations (used by features like documents, notes etc.)
   const create = useCallback(async (col, item) => {
     const res = await api('create', { collection: col, data: item })
     if (res.success) {
-      // Map collection to state key
       const stateKey = col === 'flashcards' ? 'flashcardDecks' : col
       setData(s => ({ ...s, [stateKey]: [...(s[stateKey] || []), res.data] }))
       return res.data
@@ -120,21 +115,6 @@ export function AppProvider({ children }) {
     }
   }, [data.appSettings, update, create])
 
-  const adminLogin = useCallback(async (email, pass) => {
-    const res = await api('admin_login', { payload: { email, password: pass } })
-    if (res.success) {
-      sessionStorage.setItem('ngoms_admin', JSON.stringify(res.session))
-      setAdminSession(res.session)
-      return true
-    }
-    return false
-  }, [])
-
-  const adminLogout = useCallback(() => {
-    sessionStorage.removeItem('ngoms_admin')
-    setAdminSession(null)
-  }, [])
-
   const toggleFeature = useCallback(async (id) => {
     const f = data.features.find(ft => ft.id === id)
     if (f) {
@@ -165,16 +145,14 @@ export function AppProvider({ children }) {
     localStorage.removeItem('ngoms_prefs')
     localStorage.removeItem('ngoms_notes')
     localStorage.removeItem('ngoms_planner')
-    sessionStorage.removeItem('ngoms_admin')
     setUser(loadUser())
-    setAdminSession(null)
   }, [])
 
   return (
     <AppCtx.Provider value={{
-      ...data, loading, adminSession, user,
+      ...data, loading, user,
       create, update, remove, setBanner, setSettings,
-      adminLogin, adminLogout, toggleFeature, pushNotification,
+      toggleFeature, pushNotification,
       isFeatureEnabled, refresh, updateUser, signOut,
     }}>
       {children}

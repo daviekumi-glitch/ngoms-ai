@@ -15,8 +15,6 @@ import Leaderboard from './pages/Leaderboard'
 import Settings from './pages/Settings'
 import Notifications from './pages/Notifications'
 import Profile from './pages/Profile'
-import AdminLogin from './pages/AdminLogin'
-import AdminPanel from './pages/AdminPanel'
 import Layout from './components/layout/Layout'
 
 function MaintenanceGate({ children }) {
@@ -44,8 +42,6 @@ export default function App() {
     <AppProvider>
       <Routes>
         <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminPanel />} />
         <Route path="/" element={<MaintenanceGate><Layout /></MaintenanceGate>}>
           <Route index element={<Dashboard />} />
           <Route path="documents" element={<Documents />} />
