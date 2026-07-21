@@ -1,29 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Brain, FileText, Zap, Lightbulb, BookOpen, Paperclip } from 'lucide-react'
+import { Send, Brain, FileText, Zap, Lightbulb, BookOpen, ArrowLeft, Sparkles } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 const API_URL = 'https://vesper-ecdb8354.base44.app/functions/ngomsApi'
 
 const quickPrompts = [
-  { icon: Lightbulb, label: 'Explain simply', prompt: 'Explain this like I am 5 years old' },
-  { icon: FileText, label: 'Examples', prompt: 'Give me 3 real-world examples of this concept' },
-  { icon: Zap, label: 'Quiz me', prompt: 'Quiz me on the key points of this topic' },
-  { icon: BookOpen, label: 'Summarise', prompt: 'Give me a bullet-point summary of the main ideas' },
-]
-
-const initMsgs = [
-  { role: 'ai', text: 'Hello! I am your Ngoms AI Tutor. I can explain concepts, quiz you, and help with study notes. What would you like to learn today?', time: '10:30 AM' }
+  { icon: Lightbulb, label: 'Explain simply', prompt: 'Explain this like I\'m 12 years old' },
+  { icon: FileText, label: 'Give examples', prompt: 'Give me 3 real-world examples' },
+  { icon: Zap, label: 'Quiz me', prompt: 'Quiz me on the key points' },
+  { icon: BookOpen, label: 'Summarise', prompt: 'Give me a concise bullet-point summary' },
 ]
 
 function TypingIndicator() {
   return (
-    <div className="flex items-end gap-3">
-      <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-primary to-violet flex items-center justify-center shrink-0">
+    <div className="flex items-end gap-2.5">
+      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand to-sky-400 flex items-center justify-center shrink-0">
         <Brain size={14} className="text-white" />
       </div>
-      <div className="glass px-4 py-3 rounded-2xl rounded-bl-sm">
+      <div className="bg-white border border-surface-border rounded-3xl rounded-bl-sm px-4 py-3 shadow-card">
         <div className="flex gap-1 items-center h-4">
           {[0,1,2].map(i => (
-            <div key={i} className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: `${i*0.15}s` }} />
+            <div key={i} className="w-1.5 h-1.5 rounded-full bg-brand/50 animate-bounce" style={{ animationDelay: `${i*0.15}s` }} />
           ))}
         </div>
       </div>
@@ -31,114 +28,123 @@ function TypingIndicator() {
   )
 }
 
+const initMsgs = [
+  { role: 'ai', text: 'Hi there! I\'m your Ngoms AI Tutor 👋\n\nI can explain concepts, quiz you, help with flashcards, or break down any topic you\'re studying. What would you like to learn today?', time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) }
+]
+
 export default function ChatTutor() {
   const [msgs, setMsgs] = useState(initMsgs)
   const [input, setInput] = useState('')
-  const [typing, setTyping] = useState(false)
+  const [loading, setLoading] = useState(false)
   const bottomRef = useRef(null)
+  const inputRef = useRef(null)
+  const nav = useNavigate()
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, typing])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, loading])
 
-  const send = async (text) => {
-    const msg = text || input.trim()
-    if (!msg || typing) return
+  const sendMessage = async (text) => {
+    const userMsg = text || input.trim()
+    if (!userMsg || loading) return
     setInput('')
-    const userMsg = { role: 'user', text: msg, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-    setMsgs(m => [...m, userMsg])
-    setTyping(true)
-
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    setMsgs(m => [...m, { role: 'user', text: userMsg, time: now }])
+    setLoading(true)
     try {
+      const history = msgs.slice(-8).map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text }))
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'ai_chat', payload: { messages: [...msgs, userMsg] } }),
+        body: JSON.stringify({ action: 'chat', message: userMsg, history }),
       })
-      const json = await res.json()
-      setTyping(false)
+      const data = await res.json()
       setMsgs(m => [...m, {
         role: 'ai',
-        text: json.reply || json.error || 'Sorry, I could not process that. Please try again.',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        model: json.model,
-      }])
-    } catch (err) {
-      setTyping(false)
-      setMsgs(m => [...m, {
-        role: 'ai',
-        text: 'Connection error. Please check your internet and try again.',
+        text: data.reply || data.message || 'I could not get a response. Please try again.',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }])
+    } catch {
+      setMsgs(m => [...m, { role: 'ai', text: 'Connection error. Please check your internet and try again.', time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) }])
     }
+    setLoading(false)
   }
 
+  const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }
+
   return (
-    <div className="flex flex-col h-screen bg-navy-900">
-      {/* Header - fixed */}
-      <div className="glass border-b border-white/5 px-4 py-3 flex items-center gap-3 shrink-0">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-violet flex items-center justify-center shadow-lg shadow-primary/30">
-          <Brain size={20} className="text-white" />
+    <div className="flex flex-col h-screen bg-surface-soft">
+      {/* Header */}
+      <div className="bg-white border-b border-surface-border px-5 pt-12 pb-4 flex items-center gap-3 shrink-0">
+        <button onClick={() => nav(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-surface-soft border border-surface-border md:hidden">
+          <ArrowLeft size={17} className="text-ink" />
+        </button>
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand to-sky-400 flex items-center justify-center shadow-btn">
+          <Brain size={18} className="text-white" />
         </div>
-        <div className="flex-1">
-          <p className="font-bold text-white text-sm">Ngoms AI Tutor</p>
-          <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span className="text-white/40 text-xs">Online</span>
-          </div>
+        <div>
+          <p className="font-bold text-ink">AI Tutor</p>
+          <p className="text-xs text-success font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-success rounded-full inline-block" /> Always online
+          </p>
         </div>
       </div>
 
-      {/* Quick prompts - fixed */}
-      <div className="flex gap-2 px-4 py-2.5 overflow-x-auto scrollbar-hide border-b border-white/5 shrink-0">
-        {quickPrompts.map(q => (
-          <button key={q.label} onClick={() => send(q.prompt)}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 glass rounded-xl text-xs text-white/60 hover:text-white active:scale-95 transition-all">
-            <q.icon size={12} />{q.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Messages - scrollable */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3.5">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {msgs.map((m, i) => (
-          <div key={i} className={`flex items-end gap-3 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+          <div key={i} className={`flex items-end gap-2.5 ${m.role === 'user' ? 'flex-row-reverse' : ''} animate-slide-up`}>
             {m.role === 'ai' && (
-              <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-primary to-violet flex items-center justify-center shrink-0">
-                <Brain size={14} className="text-white" />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand to-sky-400 flex items-center justify-center shrink-0">
+                <Brain size={13} className="text-white" />
               </div>
             )}
-            <div className={`max-w-[80%] flex flex-col gap-1`}>
-              <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-line ${m.role === 'ai' ? 'glass text-white/80 rounded-bl-sm' : 'bg-gradient-to-r from-primary to-violet text-white rounded-br-sm'}`}>
+            <div className={`max-w-[78%] ${m.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+              <div className={`px-4 py-3 rounded-3xl text-sm leading-relaxed whitespace-pre-wrap
+                ${m.role === 'user'
+                  ? 'bg-brand text-white rounded-br-sm shadow-btn'
+                  : 'bg-white text-ink rounded-bl-sm border border-surface-border shadow-card'}`}
+              >
                 {m.text}
               </div>
-              <span className="text-[10px] text-white/20 px-1">{m.time}</span>
+              <span className="text-[10px] text-ink-muted px-1">{m.time}</span>
             </div>
           </div>
         ))}
-        {typing && <TypingIndicator />}
+        {loading && <TypingIndicator />}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input - fixed bottom */}
-      <div className="glass border-t border-white/5 px-4 py-3 pb-4 shrink-0">
-        <div className="flex items-end gap-2">
-          <button onClick={async () => { try { const text = await navigator.clipboard.readText(); if (text) setInput(text) } catch {} }} className="glass p-2.5 rounded-xl text-white/40 active:scale-90 transition-transform">
-            <Paperclip size={16} />
-          </button>
-          <div className="flex-1 relative">
-            <textarea
-              className="input-field text-sm py-3 px-4 resize-none max-h-32 leading-relaxed"
-              placeholder="Ask anything..."
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-              rows={1}
-            />
-          </div>
+      {/* Quick prompts */}
+      <div className="px-4 py-2 flex gap-2 overflow-x-auto scrollbar-hide shrink-0">
+        {quickPrompts.map(q => (
           <button
-            onClick={() => send()}
-            className={`p-2.5 rounded-xl transition-transform active:scale-90 ${input.trim() ? 'bg-gradient-to-r from-primary to-violet shadow-lg shadow-primary/30' : 'glass text-white/30'}`}
+            key={q.label}
+            onClick={() => sendMessage(q.prompt)}
+            className="flex items-center gap-1.5 bg-white border border-surface-border text-ink-secondary text-xs font-semibold px-3 py-2 rounded-full whitespace-nowrap hover:border-brand/30 hover:text-brand transition-colors shadow-card"
           >
-            <Send size={16} className="text-white" />
+            <q.icon size={12} /> {q.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Input */}
+      <div className="bg-white border-t border-surface-border px-4 py-3 shrink-0 safe-pb">
+        <div className="flex items-end gap-2.5 max-w-2xl mx-auto">
+          <textarea
+            ref={inputRef}
+            className="flex-1 bg-surface-soft border border-surface-border rounded-2xl px-4 py-3 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 resize-none max-h-28 transition-all"
+            placeholder="Ask me anything..."
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKey}
+            rows={1}
+          />
+          <button
+            onClick={() => sendMessage()}
+            disabled={!input.trim() || loading}
+            className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-all
+              ${input.trim() && !loading ? 'bg-brand text-white shadow-btn active:scale-95' : 'bg-surface-muted text-ink-faint'}`}
+          >
+            <Send size={17} />
           </button>
         </div>
       </div>
