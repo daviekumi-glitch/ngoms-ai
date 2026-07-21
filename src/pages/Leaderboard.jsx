@@ -1,59 +1,72 @@
-import { Crown, Trophy } from 'lucide-react'
+import { Trophy, Medal, Star, Flame, Crown } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
-const badgeStyle = {
-  Diamond: 'from-cyan-400 to-blue-500',
-  Gold: 'from-yellow-400 to-amber-500',
-  Silver: 'from-gray-300 to-gray-400',
-  Bronze: 'from-orange-400 to-orange-600',
-}
+const MEDALS = ['🥇', '🥈', '🥉']
+const BG = ['from-amber-400 to-yellow-300', 'from-slate-400 to-slate-300', 'from-amber-600 to-amber-500']
 
 export default function Leaderboard() {
-  const { leaderboard, isFeatureEnabled } = useApp()
-
-  if (!isFeatureEnabled('leaderboard')) {
-    return <div className="p-6 text-center text-white/40">Leaderboard is currently disabled by admin.</div>
-  }
-
-  const sorted = [...(leaderboard || [])].sort((a, b) => b.xp - a.xp)
+  const { leaderboard, user } = useApp()
+  const entries = (leaderboard || []).slice(0, 20)
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <div className="mb-5">
-        <h1 className="text-2xl font-black text-white">Leaderboard</h1>
-        <p className="text-white/40 text-sm mt-0.5">Top learners this season</p>
+    <div className="px-5 pt-12 pb-6 max-w-2xl mx-auto animate-fade-in">
+      <div className="mb-6">
+        <h1 className="text-2xl font-black text-ink">Leaderboard</h1>
+        <p className="text-sm text-ink-muted">Top learners this month</p>
       </div>
 
-      {/* Top 3 podium - fixed layout */}
-      <div className="grid grid-cols-3 gap-2.5 mb-5">
-        {[sorted[1], sorted[0], sorted[2]].filter(Boolean).map((u, i) => {
-          const place = i === 0 ? 2 : i === 1 ? 1 : 3
+      {/* Top 3 podium */}
+      {entries.length >= 3 && (
+        <div className="flex items-end justify-center gap-3 mb-8">
+          {[entries[1], entries[0], entries[2]].map((e, i) => {
+            const rank = i === 0 ? 2 : i === 1 ? 1 : 3
+            const height = rank === 1 ? 'h-28' : rank === 2 ? 'h-20' : 'h-16'
+            return (
+              <div key={e?.id || i} className="flex flex-col items-center gap-2 flex-1">
+                <div className="w-12 h-12 rounded-full bg-brand-soft flex items-center justify-center text-xl border-2 border-white shadow-card">
+                  {(e?.avatar || e?.name || 'U')[0].toUpperCase()}
+                </div>
+                <p className="text-xs font-bold text-ink text-center truncate w-full">{e?.name || `Learner ${rank}`}</p>
+                <div className={`w-full ${height} bg-gradient-to-t ${BG[rank-1]} rounded-t-2xl flex items-center justify-center shadow-card`}>
+                  <span className="text-2xl">{MEDALS[rank - 1]}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Full list */}
+      <div className="space-y-2">
+        {entries.map((e, i) => {
+          const isUser = e?.name === user?.name
           return (
-            <div key={u.id}
-              className={`glass rounded-2xl p-3 text-center ${place === 1 ? 'scale-105 shadow-lg shadow-amber-500/20' : ''}`}>
-              {place === 1 && <Crown size={18} className="text-amber-400 mx-auto mb-1" />}
-              <div className="text-2xl mb-1.5">{u.avatar}</div>
-              <p className="text-white font-bold text-xs truncate">{u.name}</p>
-              <p className="text-white/50 text-[11px]">{(u.xp || 0).toLocaleString()} XP</p>
-              <div className={`mt-1.5 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r ${badgeStyle[u.badge] || 'from-white/10 to-white/5'} text-white`}>{u.badge}</div>
+            <div key={e?.id || i} className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-all
+              ${isUser ? 'bg-brand-soft border-brand/30 shadow-card' : 'bg-white border-surface-border shadow-card'}`}>
+              <span className={`text-base font-black w-6 text-center ${i < 3 ? 'text-2xl' : 'text-ink-muted'}`}>
+                {i < 3 ? MEDALS[i] : `${i + 1}`}
+              </span>
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${isUser ? 'bg-brand text-white' : 'bg-surface-muted text-ink-secondary'}`}>
+                {(e?.name || 'U')[0].toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`font-bold text-sm ${isUser ? 'text-brand' : 'text-ink'}`}>{e?.name || 'Learner'} {isUser && '(You)'}</p>
+                <p className="text-xs text-ink-muted">{e?.badge || 'Learner'}</p>
+              </div>
+              <div className="flex items-center gap-1">
+                <Star size={13} className="text-amber-400" />
+                <span className="text-sm font-bold text-ink">{(e?.xp || 0).toLocaleString()}</span>
+              </div>
             </div>
           )
         })}
-      </div>
-
-      {/* Full list - no animation */}
-      <div className="space-y-2">
-        {sorted.map((u, i) => (
-          <div key={u.id} className="glass p-3 rounded-2xl flex items-center gap-3">
-            <span className={`text-base font-black w-7 text-center ${i < 3 ? 'gradient-text' : 'text-white/30'}`}>{i + 1}</span>
-            <div className="text-xl">{u.avatar}</div>
-            <div className="flex-1">
-              <p className="text-white font-semibold text-sm">{u.name}</p>
-              <p className="text-white/40 text-xs">{(u.xp || 0).toLocaleString()} XP</p>
-            </div>
-            <div className={`px-2.5 py-1 rounded-full text-[11px] font-bold bg-gradient-to-r ${badgeStyle[u.badge] || 'from-white/10 to-white/5'} text-white`}>{u.badge}</div>
+        {entries.length === 0 && (
+          <div className="flex flex-col items-center py-16 text-center">
+            <Trophy size={40} className="text-ink-faint mb-3" />
+            <p className="font-bold text-ink">Leaderboard is empty</p>
+            <p className="text-sm text-ink-muted">Start studying to earn XP and rank up!</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   )
