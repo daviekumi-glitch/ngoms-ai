@@ -1,162 +1,96 @@
-import { useState, useRef } from 'react'
-import { Upload, Search, FileText, Eye, Trash2, Plus, X, File } from 'lucide-react'
+import { useState } from 'react'
+import { FileText, Search, Upload, ExternalLink, Trash2, Plus, ChevronRight, BookOpen } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
-const typeColors = {
-  PDF: 'bg-red-500/20 text-red-400',
-  DOCX: 'bg-blue-500/20 text-blue-400',
-  PPTX: 'bg-orange-500/20 text-orange-400',
-  XLSX: 'bg-emerald-500/20 text-emerald-400',
-  Image: 'bg-violet/20 text-violet-300',
-  Video: 'bg-pink-500/20 text-pink-400',
-  Audio: 'bg-cyan-500/20 text-cyan-400',
-}
-
-const fileTypes = ['PDF', 'DOCX', 'PPTX', 'XLSX', 'Image', 'Video', 'Audio']
-
 export default function Documents() {
-  const { documents, create, remove, loading, user } = useApp()
+  const { documents, create, remove } = useApp()
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState('all')
-  const [showUpload, setShowUpload] = useState(false)
-  const [uploadData, setUploadData] = useState({ title: '', type: 'PDF', size: '', fileUrl: '' })
-  const [creating, setCreating] = useState(false)
-  const fileRef = useRef(null)
+  const [showAdd, setShowAdd] = useState(false)
+  const [form, setForm] = useState({ title: '', category: '', url: '', description: '' })
 
-  const filtered = (documents || []).filter(d => {
-    const matchSearch = (d.title || '').toLowerCase().includes(search.toLowerCase())
-    const matchFilter = filter === 'all' || (d.type || '').toUpperCase() === filter.toUpperCase()
-    return matchSearch && matchFilter
-  })
+  const docs = (documents || []).filter(d =>
+    !search || d.title?.toLowerCase().includes(search.toLowerCase()) || d.category?.toLowerCase().includes(search.toLowerCase())
+  )
 
-  const handleCreate = async () => {
-    if (!uploadData.title.trim()) return
-    setCreating(true)
-    await create('documents', {
-      title: uploadData.title,
-      type: uploadData.type,
-      size: uploadData.size || '—',
-      fileUrl: uploadData.fileUrl || '',
-      date: new Date().toISOString().split('T')[0],
-      uploadedBy: user?.name || 'User',
-      status: 'approved',
-    })
-    setUploadData({ title: '', type: 'PDF', size: '', fileUrl: '' })
-    setCreating(false)
-    setShowUpload(false)
+  const save = async () => {
+    if (!form.title.trim()) return
+    await create('documents', { ...form, status: 'Active', views: 0 })
+    setForm({ title: '', category: '', url: '', description: '' }); setShowAdd(false)
   }
 
-  const handleDelete = async (id) => {
-    if (confirm('Delete this document?')) {
-      await remove('documents', id)
-    }
-  }
+  const categories = [...new Set((documents || []).map(d => d.category).filter(Boolean))]
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
+    <div className="px-5 pt-12 pb-6 max-w-2xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-2xl font-black text-white">Documents</h1>
-          <p className="text-white/40 text-sm mt-0.5">Your study library</p>
+          <h1 className="text-2xl font-black text-ink">Documents</h1>
+          <p className="text-sm text-ink-muted">{docs.length} materials</p>
         </div>
-        <button onClick={() => setShowUpload(true)}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-primary to-violet text-white text-sm font-semibold active:scale-95 transition-transform">
-          <Plus size={16} /> Upload
+        <button onClick={() => setShowAdd(true)} className="w-11 h-11 rounded-2xl bg-brand flex items-center justify-center shadow-btn active:scale-95">
+          <Plus size={20} className="text-white" />
         </button>
       </div>
 
-      <div className="flex gap-2 mb-4">
-        <div className="flex-1 relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search documents..." className="input-field pl-10 text-sm" />
-        </div>
-        <select value={filter} onChange={e => setFilter(e.target.value)} className="glass rounded-xl px-3 text-sm text-white/70 outline-none">
-          <option value="all" className="bg-navy-800">All Types</option>
-          {fileTypes.map(t => <option key={t} value={t} className="bg-navy-800">{t}</option>)}
-        </select>
+      {/* Search */}
+      <div className="search-bar mb-4">
+        <Search size={16} className="text-ink-muted shrink-0" />
+        <input className="flex-1 bg-transparent text-sm text-ink placeholder-ink-faint focus:outline-none" placeholder="Search documents..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      {loading ? (
-        <div className="space-y-3">
-          {[1,2,3].map(i => <div key={i} className="h-16 rounded-2xl bg-white/5 animate-pulse" />)}
+      {/* Add form */}
+      {showAdd && (
+        <div className="card mb-5 animate-slide-up">
+          <p className="font-bold text-ink mb-3">Add Document</p>
+          <div className="space-y-3">
+            <input className="input" placeholder="Title *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+            <input className="input" placeholder="Category (e.g. Biology, Maths)" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} />
+            <input className="input" placeholder="URL / Link (optional)" value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} />
+            <textarea className="input resize-none" rows={2} placeholder="Description (optional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+            <div className="flex gap-2">
+              <button onClick={save} disabled={!form.title.trim()} className="btn-primary flex-1 py-3 text-sm">Add</button>
+              <button onClick={() => setShowAdd(false)} className="btn-ghost flex-1 py-3 text-sm">Cancel</button>
+            </div>
+          </div>
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <FileText size={48} className="text-white/10 mx-auto mb-3" />
-          <p className="text-white/30 text-sm">No documents found</p>
-          <p className="text-white/20 text-xs mt-1">Upload a file to get started</p>
+      )}
+
+      {/* Documents list */}
+      {docs.length === 0 ? (
+        <div className="flex flex-col items-center py-16 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-brand-soft flex items-center justify-center mb-4">
+            <BookOpen size={28} className="text-brand" />
+          </div>
+          <p className="font-bold text-ink mb-1">No documents yet</p>
+          <p className="text-sm text-ink-muted mb-5">Add study materials, links, or resources</p>
+          <button onClick={() => setShowAdd(true)} className="btn-primary px-8">Add Document</button>
         </div>
       ) : (
-        <div className="space-y-2.5">
-          {filtered.map((d) => (
-            <div key={d.id} className="glass p-3.5 rounded-2xl flex items-center gap-3 active:scale-[0.98] transition-transform">
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${typeColors[(d.type || 'PDF').toUpperCase()] || 'bg-emerald-500/20 text-emerald-400'}`}>
-                <FileText size={20} />
+        <div className="space-y-3">
+          {docs.map(d => (
+            <div key={d.id} className="bg-white rounded-2xl p-4 flex items-center gap-3 border border-surface-border shadow-card">
+              <div className="w-11 h-11 rounded-2xl bg-brand-soft flex items-center justify-center shrink-0">
+                <FileText size={18} className="text-brand" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold text-sm truncate">{d.title}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-white/40 text-xs">{d.size || '—'}</span>
-                  <span className="text-white/20 text-xs">·</span>
-                  <span className="text-white/40 text-xs">{d.type || 'File'}</span>
-                  {d.uploadedBy && (<><span className="text-white/20 text-xs">·</span><span className="text-white/40 text-xs">{d.uploadedBy}</span></>)}
+                <p className="font-bold text-sm text-ink truncate">{d.title}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {d.category && <span className="chip text-[10px]">{d.category}</span>}
+                  {d.description && <span className="text-xs text-ink-muted truncate">{d.description}</span>}
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                {d.fileUrl && (
-                  <a href={d.fileUrl} target="_blank" rel="noopener noreferrer"
-                    className="p-2 rounded-lg hover:bg-primary/20 text-primary/60 hover:text-primary transition-all">
-                    <Eye size={16} />
+              <div className="flex items-center gap-1">
+                {d.url && (
+                  <a href={d.url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-xl bg-brand-soft flex items-center justify-center text-brand active:scale-95">
+                    <ExternalLink size={14} />
                   </a>
                 )}
-                <button onClick={() => handleDelete(d.id)}
-                  className="p-2 rounded-lg hover:bg-red-500/20 text-red-400/60 hover:text-red-400 transition-all">
-                  <Trash2 size={16} />
+                <button onClick={() => remove('documents', d.id)} className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center text-danger active:scale-95">
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Upload Modal */}
-      {showUpload && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setShowUpload(false)}>
-          <div className="glass rounded-2xl p-5 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white font-bold text-lg">Upload Document</h2>
-              <button onClick={() => setShowUpload(false)} className="text-white/40 hover:text-white"><X size={20} /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Document Title</label>
-                <input value={uploadData.title} onChange={e => setUploadData({ ...uploadData, title: e.target.value })}
-                  placeholder="e.g. Biology Chapter 1" className="input-field" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Type</label>
-                  <select value={uploadData.type} onChange={e => setUploadData({ ...uploadData, type: e.target.value })} className="input-field">
-                    {fileTypes.map(t => <option key={t} value={t} className="bg-navy-800">{t}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Size</label>
-                  <input value={uploadData.size} onChange={e => setUploadData({ ...uploadData, size: e.target.value })}
-                    placeholder="e.g. 2.5 MB" className="input-field" />
-                </div>
-              </div>
-              <div>
-                <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">File URL (optional)</label>
-                <input value={uploadData.fileUrl} onChange={e => setUploadData({ ...uploadData, fileUrl: e.target.value })}
-                  placeholder="https://..." className="input-field" />
-              </div>
-              <button onClick={handleCreate} disabled={creating || !uploadData.title.trim()}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-violet text-white font-bold text-sm active:scale-95 transition-transform disabled:opacity-50">
-                {creating ? 'Uploading...' : 'Add Document'}
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>
