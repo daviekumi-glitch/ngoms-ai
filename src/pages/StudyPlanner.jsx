@@ -1,175 +1,146 @@
 import { useState } from 'react'
-import { Calendar, Plus, Clock, ChevronLeft, ChevronRight, Check, X, Trash2 } from 'lucide-react'
+import { Calendar, Plus, Clock, CheckCircle, Trash2, BookOpen } from 'lucide-react'
+import { useApp } from '../context/AppContext'
 
-function loadEvents() {
-  const saved = localStorage.getItem('ngoms_planner')
-  return saved ? JSON.parse(saved) : [
-    { id: 'e1', title: 'Biology Review', time: '09:00', duration: 60, color: 'from-emerald-500 to-teal-500', done: true },
-    { id: 'e2', title: 'Math Practice', time: '14:00', duration: 90, color: 'from-blue-500 to-primary', done: false },
-    { id: 'e3', title: 'English Essay', time: '16:30', duration: 45, color: 'from-violet to-purple-500', done: false },
-  ]
-}
-
-const colors = [
-  { id: 'emerald', val: 'from-emerald-500 to-teal-500' },
-  { id: 'blue', val: 'from-blue-500 to-primary' },
-  { id: 'violet', val: 'from-violet to-purple-500' },
-  { id: 'amber', val: 'from-amber-500 to-orange-500' },
-  { id: 'rose', val: 'from-rose-500 to-pink-500' },
-]
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
 export default function StudyPlanner() {
-  const [month, setMonth] = useState(new Date().getMonth())
-  const [year, setYear] = useState(new Date().getFullYear())
-  const [events, setEvents] = useState(loadEvents)
+  const { courses } = useApp()
+  const [sessions, setSessions] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('ngoms_sessions') || '[]') } catch { return [] }
+  })
   const [showAdd, setShowAdd] = useState(false)
-  const [newEvent, setNewEvent] = useState({ title: '', time: '09:00', duration: 60, color: 'from-blue-500 to-primary' })
+  const [form, setForm] = useState({ subject: '', date: '', time: '', duration: '60', notes: '' })
+
   const today = new Date()
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today); d.setDate(today.getDate() - today.getDay() + i)
+    return d
+  })
 
-  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const firstDay = new Date(year, month, 1).getDay()
-
-  const saveEvents = (newEvents) => {
-    setEvents(newEvents)
-    localStorage.setItem('ngoms_planner', JSON.stringify(newEvents))
+  const save = () => {
+    const ns = [...sessions, { ...form, id: Date.now(), completed: false }]
+    setSessions(ns); localStorage.setItem('ngoms_sessions', JSON.stringify(ns))
+    setForm({ subject: '', date: '', time: '', duration: '60', notes: '' }); setShowAdd(false)
   }
 
-  const toggleDone = (id) => {
-    saveEvents(events.map(e => e.id === id ? { ...e, done: !e.done } : e))
+  const toggle = (id) => {
+    const ns = sessions.map(s => s.id === id ? { ...s, completed: !s.completed } : s)
+    setSessions(ns); localStorage.setItem('ngoms_sessions', JSON.stringify(ns))
   }
 
-  const deleteEvent = (id) => {
-    saveEvents(events.filter(e => e.id !== id))
+  const remove = (id) => {
+    const ns = sessions.filter(s => s.id !== id)
+    setSessions(ns); localStorage.setItem('ngoms_sessions', JSON.stringify(ns))
   }
 
-  const addEvent = () => {
-    if (!newEvent.title.trim()) return
-    saveEvents([...events, { id: `e${Date.now()}`, ...newEvent, done: false }])
-    setNewEvent({ title: '', time: '09:00', duration: 60, color: 'from-blue-500 to-primary' })
-    setShowAdd(false)
-  }
+  const todaySessions = sessions.filter(s => s.date === today.toISOString().split('T')[0])
+  const upcomingSessions = sessions.filter(s => s.date > today.toISOString().split('T')[0]).slice(0, 5)
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-5">
+    <div className="px-5 pt-12 pb-6 max-w-2xl mx-auto animate-fade-in">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-white">Study Planner</h1>
-          <p className="text-white/40 text-sm mt-0.5">Your study schedule</p>
+          <h1 className="text-2xl font-black text-ink">Study Planner</h1>
+          <p className="text-sm text-ink-muted">{sessions.filter(s => !s.completed).length} sessions pending</p>
         </div>
-        <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-primary to-violet text-white text-sm font-semibold active:scale-95 transition-transform">
-          <Plus size={16} /> Add
+        <button onClick={() => setShowAdd(true)} className="w-11 h-11 rounded-2xl bg-brand flex items-center justify-center shadow-btn active:scale-95">
+          <Plus size={20} className="text-white" />
         </button>
       </div>
 
-      {/* Calendar */}
-      <div className="glass p-4 rounded-2xl mb-5">
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={() => { if (month === 0) { setMonth(11); setYear(year - 1) } else setMonth(month - 1) }}
-            className="glass p-1.5 rounded-lg text-white/60 active:scale-90 transition-transform">
-            <ChevronLeft size={16} />
-          </button>
-          <p className="text-white font-semibold text-sm">{monthNames[month]} {year}</p>
-          <button onClick={() => { if (month === 11) { setMonth(0); setYear(year + 1) } else setMonth(month + 1) }}
-            className="glass p-1.5 rounded-lg text-white/60 active:scale-90 transition-transform">
-            <ChevronRight size={16} />
-          </button>
-        </div>
-        <div className="grid grid-cols-7 gap-1 mb-1">
-          {['S','M','T','W','T','F','S'].map((d, i) => (
-            <div key={i} className="text-center text-white/30 text-[11px] font-bold py-1">{d}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {Array.from({ length: firstDay }, (_, i) => <div key={'empty' + i} />)}
-          {Array.from({ length: daysInMonth }, (_, i) => {
-            const day = i + 1
-            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
-            return (
-              <div key={day}
-                className={`aspect-square rounded-lg flex items-center justify-center text-xs font-semibold transition-colors ${
-                  isToday ? 'bg-gradient-to-br from-primary to-violet text-white' : 'text-white/50 hover:bg-white/5'
-                }`}>
-                {day}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Today's schedule */}
-      <div className="flex items-center justify-between mb-2.5">
-        <p className="text-white/60 text-xs font-semibold uppercase tracking-wide">Today's Schedule</p>
-        <span className="text-white/30 text-xs">{events.filter(e => e.done).length}/{events.length} done</span>
-      </div>
-      <div className="space-y-2.5">
-        {events.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar size={40} className="text-white/10 mx-auto mb-2" />
-            <p className="text-white/30 text-sm">No study sessions scheduled</p>
-          </div>
-        ) : events.map((e) => (
-          <div key={e.id} className="glass p-3.5 rounded-2xl flex items-center gap-3">
-            <div className={`w-1 h-12 rounded-full bg-gradient-to-b ${e.color}`} />
-            <button onClick={() => toggleDone(e.id)}
-              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                e.done ? 'bg-emerald-500 border-emerald-500' : 'border-white/20 hover:border-primary/50'
-              }`}>
-              {e.done && <Check size={12} className="text-white" />}
-            </button>
-            <div className="flex-1">
-              <p className={`text-white font-semibold text-sm ${e.done ? 'line-through opacity-50' : ''}`}>{e.title}</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                <Clock size={11} className="text-white/30" />
-                <span className="text-white/40 text-xs">{e.time} · {e.duration}min</span>
-              </div>
+      {/* Week strip */}
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide mb-5 pb-1">
+        {weekDays.map((d, i) => {
+          const isToday = d.toDateString() === today.toDateString()
+          const hasSess = sessions.some(s => s.date === d.toISOString().split('T')[0])
+          return (
+            <div key={i} className={`flex flex-col items-center px-3 py-2.5 rounded-2xl min-w-[52px] transition-all ${isToday ? 'bg-brand text-white shadow-btn' : 'bg-white border border-surface-border text-ink'}`}>
+              <span className="text-[10px] font-semibold opacity-70">{DAYS[d.getDay()]}</span>
+              <span className="text-base font-black mt-0.5">{d.getDate()}</span>
+              {hasSess && <span className={`w-1.5 h-1.5 rounded-full mt-1 ${isToday ? 'bg-white/60' : 'bg-brand'}`} />}
             </div>
-            <button onClick={() => deleteEvent(e.id)} className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400/40 hover:text-red-400 transition-all">
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      {/* Add Event Modal */}
+      {/* Add session form */}
       {showAdd && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setShowAdd(false)}>
-          <div className="glass rounded-2xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white font-bold text-lg">Add Study Session</h2>
-              <button onClick={() => setShowAdd(false)} className="text-white/40 hover:text-white"><X size={20} /></button>
+        <div className="card mb-5 animate-slide-up">
+          <p className="font-bold text-ink mb-3">Schedule Session</p>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-ink-muted mb-1 block">Subject</label>
+              <input className="input" placeholder="e.g. Mathematics" value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} />
             </div>
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Title</label>
-                <input value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
-                  placeholder="e.g. Chemistry Review" className="input-field" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Time</label>
-                  <input type="time" value={newEvent.time} onChange={e => setNewEvent({ ...newEvent, time: e.target.value })} className="input-field" />
-                </div>
-                <div>
-                  <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Duration (min)</label>
-                  <input type="number" value={newEvent.duration} onChange={e => setNewEvent({ ...newEvent, duration: parseInt(e.target.value) || 60 })} className="input-field" />
-                </div>
+                <label className="text-xs font-semibold text-ink-muted mb-1 block">Date</label>
+                <input type="date" className="input" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
               </div>
               <div>
-                <label className="text-white/50 text-xs font-semibold mb-1.5 block uppercase">Color</label>
-                <div className="flex gap-2">
-                  {colors.map(c => (
-                    <button key={c.id} onClick={() => setNewEvent({ ...newEvent, color: c.val })}
-                      className={`w-8 h-8 rounded-lg bg-gradient-to-br ${c.val} ${newEvent.color === c.val ? 'ring-2 ring-white/40' : ''}`} />
-                  ))}
-                </div>
+                <label className="text-xs font-semibold text-ink-muted mb-1 block">Time</label>
+                <input type="time" className="input" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
               </div>
-              <button onClick={addEvent} disabled={!newEvent.title.trim()}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-violet text-white font-bold text-sm active:scale-95 transition-transform disabled:opacity-50">
-                Add Session
-              </button>
             </div>
+            <div>
+              <label className="text-xs font-semibold text-ink-muted mb-1 block">Duration (minutes)</label>
+              <select className="input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))}>
+                {[30,45,60,90,120].map(d => <option key={d} value={d}>{d} min</option>)}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={save} disabled={!form.subject || !form.date} className="btn-primary flex-1 py-3 text-sm">Save</button>
+              <button onClick={() => setShowAdd(false)} className="btn-ghost flex-1 py-3 text-sm">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Today sessions */}
+      <div className="mb-5">
+        <p className="section-title mb-3">Today</p>
+        {todaySessions.length === 0
+          ? <div className="bg-white rounded-2xl p-4 border border-surface-border text-center text-sm text-ink-muted">No sessions scheduled today</div>
+          : <div className="space-y-2">
+              {todaySessions.map(s => (
+                <div key={s.id} className="bg-white rounded-2xl p-4 flex items-center gap-3 border border-surface-border shadow-card">
+                  <button onClick={() => toggle(s.id)} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${s.completed ? 'bg-success border-success' : 'border-ink-faint'}`}>
+                    {s.completed && <CheckCircle size={14} className="text-white" />}
+                  </button>
+                  <div className="flex-1">
+                    <p className={`font-bold text-sm ${s.completed ? 'line-through text-ink-muted' : 'text-ink'}`}>{s.subject}</p>
+                    <p className="text-xs text-ink-muted">{s.time} · {s.duration} min</p>
+                  </div>
+                  <button onClick={() => remove(s.id)} className="text-ink-faint hover:text-danger transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+        }
+      </div>
+
+      {/* Upcoming */}
+      {upcomingSessions.length > 0 && (
+        <div>
+          <p className="section-title mb-3">Upcoming</p>
+          <div className="space-y-2">
+            {upcomingSessions.map(s => (
+              <div key={s.id} className="bg-white rounded-2xl p-4 flex items-center gap-3 border border-surface-border shadow-card">
+                <div className="w-10 h-10 rounded-xl bg-brand-soft flex items-center justify-center shrink-0">
+                  <BookOpen size={16} className="text-brand" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-sm text-ink">{s.subject}</p>
+                  <p className="text-xs text-ink-muted">{new Date(s.date).toLocaleDateString()} · {s.time}</p>
+                </div>
+                <button onClick={() => remove(s.id)} className="text-ink-faint hover:text-danger transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
