@@ -4,7 +4,9 @@ import { fetchAll, createRecord, updateRecord, deleteRecord } from '../lib/fireb
 const AppCtx = createContext(null)
 export const useApp = () => useContext(AppCtx)
 
-const ADMIN_EMAILS = ['daviekumi@gmail.com', 'admin@ngoms.ai']
+// Admin is unlocked if email matches OR if user manually unlocked via the panel PIN
+const ADMIN_EMAILS = ['daviekumi@gmail.com', 'admin@ngoms.ai', 'daviekumi-glitch@github.com']
+const ADMIN_PIN = '1234'  // simple fallback PIN for admin access
 
 function loadUser() {
   try {
@@ -12,6 +14,11 @@ function loadUser() {
     if (saved) return JSON.parse(saved)
   } catch {}
   return { name: '', email: '', plan: 'Free', role: 'Student', xp: 0, streak: 0 }
+}
+
+function isAdminEmail(email) {
+  if (!email) return false
+  return ADMIN_EMAILS.some(a => a.toLowerCase() === email.toLowerCase().trim())
 }
 
 const DEFAULT_DATA = {
@@ -23,15 +30,33 @@ const DEFAULT_DATA = {
 }
 
 export function AppProvider({ children }) {
-  const [data, setData] = useState(DEFAULT_DATA)
-  const [loading, setLoading] = useState(true)
-  const [user, setUserState] = useState(loadUser)
+  const [data, setData]         = useState(DEFAULT_DATA)
+  const [loading, setLoading]   = useState(true)
+  const [user, setUserState]    = useState(loadUser)
+  // Separate admin-unlock state so admin can access panel without setting email
+  const [adminUnlocked, setAdminUnlocked] = useState(() => {
+    try { return localStorage.getItem('ngoms_admin_unlocked') === 'true' } catch { return false }
+  })
 
-  const isAdmin = ADMIN_EMAILS.includes((user?.email || '').toLowerCase())
+  const isAdmin = adminUnlocked || isAdminEmail(user?.email)
 
   const setUser = useCallback((u) => {
     setUserState(u)
     try { localStorage.setItem('ngoms_user', JSON.stringify(u)) } catch {}
+  }, [])
+
+  const unlockAdmin = useCallback((pin) => {
+    if (pin === ADMIN_PIN) {
+      setAdminUnlocked(true)
+      try { localStorage.setItem('ngoms_admin_unlocked', 'true') } catch {}
+      return true
+    }
+    return false
+  }, [])
+
+  const lockAdmin = useCallback(() => {
+    setAdminUnlocked(false)
+    try { localStorage.removeItem('ngoms_admin_unlocked') } catch {}
   }, [])
 
   const refresh = useCallback(async () => {
@@ -42,7 +67,7 @@ export function AppProvider({ children }) {
         setData(prev => ({ ...DEFAULT_DATA, ...prev, ...res }))
       }
     } catch (e) { console.error('fetchAll error:', e) }
-    setLoading(false)
+    finally { setLoading(false) }
   }, [])
 
   useEffect(() => { refresh() }, [refresh])
@@ -91,14 +116,14 @@ export function AppProvider({ children }) {
   }, [])
 
   const value = {
-    // Spread top-level data fields for convenience
     ...data,
-    // Also expose full data object for admin panel
-    data,
+    data,         // also expose as object for admin panel
     loading,
     user,
     setUser,
     isAdmin,
+    unlockAdmin,
+    lockAdmin,
     isFeatureEnabled,
     create,
     update,
