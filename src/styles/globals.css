@@ -2,84 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
-
 @layer base {
-  *, *::before, *::after { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    @apply bg-surface-soft text-ink font-sans overflow-x-hidden;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  :root {
+    --brand: #0F73F7;
+    --brand-soft: #EEF5FF;
+    --ink: #1A1F36;
+    --ink-muted: #6B7280;
+    --ink-faint: #9CA3AF;
+    --surface: #FFFFFF;
+    --surface-muted: #F4F6FA;
+    --surface-hover: #F0F4FF;
+    --surface-border: #E5E9F0;
+    --danger: #EF4444;
+    --success: #22C55E;
+    --warning: #F59E0B;
   }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { @apply bg-surface-muted; }
-  ::-webkit-scrollbar-thumb { @apply bg-brand/30 rounded-full; }
-  input, textarea, select { font-family: inherit; }
+  .dark {
+    --brand: #3B9EFF;
+    --brand-soft: #1A2540;
+    --ink: #F0F4FF;
+    --ink-muted: #9CA3AF;
+    --ink-faint: #6B7280;
+    --surface: #0F1629;
+    --surface-muted: #1A2137;
+    --surface-hover: #1E2845;
+    --surface-border: #2A3555;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; transition: font-size 0.2s; }
+  body { background: var(--surface-muted); color: var(--ink); font-family: 'Inter', -apple-system, sans-serif; }
 }
 
 @layer components {
-  .card {
-    @apply bg-white rounded-3xl shadow-card border border-surface-border p-5;
-  }
-  .card-soft {
-    @apply bg-surface-soft rounded-3xl border border-surface-border p-5;
-  }
-  .card-brand {
-    @apply bg-gradient-to-br from-brand to-brand-dark rounded-3xl p-5 text-white shadow-btn;
-  }
-  .btn-primary {
-    @apply bg-brand text-white font-bold rounded-2xl px-6 py-3.5 shadow-btn
-           active:scale-95 hover:bg-brand-dark transition-all duration-200 text-center;
-  }
-  .btn-ghost {
-    @apply bg-brand-soft text-brand font-semibold rounded-2xl px-5 py-3
-           active:scale-95 hover:bg-sky-100 transition-all duration-200 text-center;
-  }
-  .btn-outline {
-    @apply bg-white border border-surface-border text-ink font-semibold rounded-2xl px-5 py-3
-           active:scale-95 hover:border-brand/30 transition-all duration-200 text-center;
-  }
-  .input {
-    @apply bg-surface-soft border border-surface-border rounded-2xl px-4 py-3.5
-           text-ink placeholder-ink-faint focus:outline-none focus:border-brand
-           focus:ring-2 focus:ring-brand/10 transition-all duration-200 w-full text-sm;
-  }
-  .chip {
-    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
-           bg-brand-soft text-brand;
-  }
-  .chip-success { @apply chip !bg-green-50 !text-success; }
-  .chip-warning { @apply chip !bg-amber-50 !text-warning; }
-  .chip-danger  { @apply chip !bg-red-50 !text-danger; }
-  .nav-item {
-    @apply flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl
-           text-ink-muted transition-all duration-200 cursor-pointer;
-  }
-  .nav-active { @apply nav-item text-brand; }
-  .skeleton {
-    @apply bg-surface-muted rounded-2xl animate-pulse;
-  }
-  .section-title { @apply text-base font-bold text-ink; }
-  .search-bar {
-    @apply flex items-center gap-3 bg-white border border-surface-border
-           rounded-2xl px-4 py-3 w-full focus-within:border-brand
-           focus-within:ring-2 focus-within:ring-brand/10 transition-all;
-  }
-  .tab-bar {
-    @apply fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-surface-border;
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
-  }
-}
-
-@layer utilities {
-  .safe-pb { padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px); }
-  .scrollbar-hide::-webkit-scrollbar { display: none; }
-  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-  .text-gradient { @apply bg-gradient-to-r from-brand to-sky-500 bg-clip-text text-transparent; }
-  /* Card flip fix */
-  .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-  .perspective-1000 { perspective: 1000px; }
-  .preserve-3d { transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
-  .rotate-y-180 { transform: rotateY(180deg); }
+  .card { @apply bg-white rounded-2xl p-5 shadow-sm border border-surface-border transition-all; }
+  .dark .card { @apply bg-surface border-surface-border; }
+  .btn-primary { @apply bg-brand text-white font-bold px-5 py-2.5 rounded-2xl hover:bg-blue-600 active:scale-95 transition-all text-sm shadow-md; }
+  .btn-secondary { @apply bg-surface-muted text-ink font-semibold px-5 py-2.5 rounded-2xl hover:bg-surface-border active:scale-95 transition-all text-sm; }
+  .input { @apply w-full bg-surface-muted border border-surface-border rounded-xl px-4 py-2.5 text-sm text-ink placeholder-ink-faint focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all; }
+  .badge-brand { @apply bg-brand-soft text-brand text-xs font-bold px-2.5 py-1 rounded-full; }
+  .badge-success { @apply bg-green-50 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full; }
+  .badge-warning { @apply bg-amber-50 text-amber-700 text-xs font-bold px-2.5 py-1 rounded-full; }
+  .badge-danger { @apply bg-red-50 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full; }
+  .glass { @apply bg-white/10 border border-white/10 backdrop-blur-md rounded-2xl; }
+  .input-field { @apply w-full bg-white/10 border border-white/15 text-white placeholder-white/30 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/60 transition-all; }
+  .text-brand { color: var(--brand); }
+  .bg-brand { background: var(--brand); }
+  .bg-brand-soft { background: var(--brand-soft); }
+  .text-ink { color: var(--ink); }
+  .text-ink-muted { color: var(--ink-muted); }
+  .text-ink-faint { color: var(--ink-faint); }
+  .bg-surface { background: var(--surface); }
+  .bg-surface-muted { background: var(--surface-muted); }
+  .bg-surface-hover { background: var(--surface-hover); }
+  .border-surface-border { border-color: var(--surface-border); }
+  .text-danger { color: var(--danger); }
+  .text-success { color: var(--success); }
 }
