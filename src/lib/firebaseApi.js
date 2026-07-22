@@ -1,6 +1,6 @@
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc,
-  deleteDoc, onSnapshot, serverTimestamp, Timestamp
+  deleteDoc, serverTimestamp, Timestamp
 } from 'firebase/firestore'
 import { db, COLLECTION_MAP } from './firebase'
 import { seedFirestore } from './seedData'
@@ -15,14 +15,15 @@ async function base44Api(action, extra = {}) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...extra }),
     })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
     return await res.json()
   } catch (err) {
-    console.error('API error:', err)
+    console.error('base44Api error:', err)
     return { success: false, error: err.message }
   }
 }
 
-const useFirebase = isNative || import.meta.env.VITE_USE_FIREBASE === 'true'
+export const useFirebase = isNative || import.meta.env.VITE_USE_FIREBASE === 'true'
 
 function docToObject(d) {
   if (!d.exists()) return null
@@ -37,10 +38,9 @@ function docToObject(d) {
 
 export async function fetchAll() {
   if (useFirebase) {
-    await seedFirestore()
+    try { await seedFirestore() } catch (e) { console.warn('Seed skipped:', e) }
 
-    const result = {}
-    const collections = [
+    const colNames = [
       'app_settings', 'app_banner', 'courses', 'flashcard_decks',
       'quizzes', 'documents', 'plans', 'payments', 'coupons',
       'badges', 'leaderboard', 'faqs', 'testimonials',
@@ -48,13 +48,12 @@ export async function fetchAll() {
       'contact_messages', 'system_logs',
     ]
 
-    await Promise.all(collections.map(async (colName) => {
+    const result = {}
+    await Promise.all(colNames.map(async (colName) => {
       try {
         const snap = await getDocs(collection(db, colName))
-        result[colName] = snap.docs.map(docToObject)
-      } catch {
-        result[colName] = []
-      }
+        result[colName] = snap.docs.map(docToObject).filter(Boolean)
+      } catch { result[colName] = [] }
     }))
 
     return {
@@ -114,12 +113,6 @@ export async function deleteRecord(collectionKey, id) {
   return base44Api('delete', { collection: collectionKey, id })
 }
 
-export function subscribeToCollection(collectionKey, callback) {
-  if (!useFirebase) return () => {}
-  const colName = COLLECTION_MAP[collectionKey] || collectionKey
-  return onSnapshot(collection(db, colName), (snap) => {
-    callback(snap.docs.map(docToObject))
-  })
+export async function adminLogin(email, password) {
+  return base44Api('admin_login', { email, password })
 }
-
-export { useFirebase, seedFirestore }
