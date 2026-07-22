@@ -5,19 +5,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
 
 @layer base {
-  * { @apply box-border; }
-  html { font-size: 16px; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
     @apply bg-surface-soft text-ink font-sans overflow-x-hidden;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { @apply bg-surface-muted; }
   ::-webkit-scrollbar-thumb { @apply bg-brand/30 rounded-full; }
+  input, textarea, select { font-family: inherit; }
 }
 
 @layer components {
-  /* Cards */
   .card {
     @apply bg-white rounded-3xl shadow-card border border-surface-border p-5;
   }
@@ -27,71 +28,46 @@
   .card-brand {
     @apply bg-gradient-to-br from-brand to-brand-dark rounded-3xl p-5 text-white shadow-btn;
   }
-
-  /* Buttons */
   .btn-primary {
     @apply bg-brand text-white font-bold rounded-2xl px-6 py-3.5 shadow-btn
-           active:scale-95 hover:bg-brand-dark transition-all duration-200;
+           active:scale-95 hover:bg-brand-dark transition-all duration-200 text-center;
   }
   .btn-ghost {
     @apply bg-brand-soft text-brand font-semibold rounded-2xl px-5 py-3
-           active:scale-95 hover:bg-sky-200 transition-all duration-200;
+           active:scale-95 hover:bg-sky-100 transition-all duration-200 text-center;
   }
   .btn-outline {
     @apply bg-white border border-surface-border text-ink font-semibold rounded-2xl px-5 py-3
-           active:scale-95 hover:border-brand/30 hover:shadow-card transition-all duration-200;
+           active:scale-95 hover:border-brand/30 transition-all duration-200 text-center;
   }
-
-  /* Inputs */
   .input {
     @apply bg-surface-soft border border-surface-border rounded-2xl px-4 py-3.5
            text-ink placeholder-ink-faint focus:outline-none focus:border-brand
-           focus:ring-2 focus:ring-brand/10 transition-all duration-200 w-full;
+           focus:ring-2 focus:ring-brand/10 transition-all duration-200 w-full text-sm;
   }
-
-  /* Tags / chips */
   .chip {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-soft text-brand;
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
+           bg-brand-soft text-brand;
   }
-  .chip-success { @apply chip bg-green-50 text-success; }
-  .chip-warning { @apply chip bg-amber-50 text-warning; }
-  .chip-danger  { @apply chip bg-red-50 text-danger; }
-
-  /* Nav */
+  .chip-success { @apply chip !bg-green-50 !text-success; }
+  .chip-warning { @apply chip !bg-amber-50 !text-warning; }
+  .chip-danger  { @apply chip !bg-red-50 !text-danger; }
   .nav-item {
     @apply flex flex-col items-center gap-0.5 px-3 py-2 rounded-2xl
            text-ink-muted transition-all duration-200 cursor-pointer;
   }
-  .nav-active {
-    @apply nav-item text-brand;
-  }
-
-  /* Skeleton */
+  .nav-active { @apply nav-item text-brand; }
   .skeleton {
     @apply bg-surface-muted rounded-2xl animate-pulse;
   }
-
-  /* Section headers */
-  .section-title {
-    @apply text-base font-bold text-ink;
-  }
-
-  /* Avatar */
-  .avatar {
-    @apply rounded-full object-cover bg-surface-muted;
-  }
-
-  /* Search bar */
+  .section-title { @apply text-base font-bold text-ink; }
   .search-bar {
-    @apply flex items-center gap-3 bg-surface-soft border border-surface-border
+    @apply flex items-center gap-3 bg-white border border-surface-border
            rounded-2xl px-4 py-3 w-full focus-within:border-brand
            focus-within:ring-2 focus-within:ring-brand/10 transition-all;
   }
-
-  /* Bottom tab bar */
   .tab-bar {
-    @apply fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-surface-border
-           flex items-end justify-around px-2 shadow-[0_-4px_20px_rgba(15,115,247,0.06)];
+    @apply fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-surface-border;
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
   }
 }
@@ -101,4 +77,9 @@
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .text-gradient { @apply bg-gradient-to-r from-brand to-sky-500 bg-clip-text text-transparent; }
+  /* Card flip fix */
+  .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .perspective-1000 { perspective: 1000px; }
+  .preserve-3d { transform-style: preserve-3d; -webkit-transform-style: preserve-3d; }
+  .rotate-y-180 { transform: rotateY(180deg); }
 }
