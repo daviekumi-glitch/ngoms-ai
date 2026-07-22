@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { Toaster } from 'react-hot-toast'
 import { AppProvider, useApp } from './context/AppContext'
 import SplashScreen from './pages/SplashScreen'
 import Onboarding from './pages/Onboarding'
@@ -26,7 +27,7 @@ function MaintenanceGate({ children }) {
         <div className="text-center max-w-sm">
           <div className="text-6xl mb-4">🔧</div>
           <h1 className="text-2xl font-black text-ink mb-2">Under Maintenance</h1>
-          <p className="text-ink-muted text-sm">{appSettings.maintenanceMessage || 'We\'ll be back soon.'}</p>
+          <p className="text-ink-muted text-sm">{appSettings.maintenanceMessage || "We'll be back soon."}</p>
         </div>
       </div>
     )
@@ -35,36 +36,49 @@ function MaintenanceGate({ children }) {
 }
 
 function AppRoutes() {
-  const onboarded = localStorage.getItem('ngoms_onboarded')
+  const [onboarded] = useState(() => !!localStorage.getItem('ngoms_onboarded'))
   return (
     <Routes>
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/" element={<MaintenanceGate><Layout /></MaintenanceGate>}>
-        <Route index element={!onboarded ? <Navigate to="/onboarding" /> : <Dashboard />} />
-        <Route path="documents" element={<Documents />} />
-        <Route path="chat"      element={<ChatTutor />} />
-        <Route path="flashcards" element={<Flashcards />} />
-        <Route path="quiz"      element={<QuizEngine />} />
-        <Route path="notes"     element={<SmartNotes />} />
-        <Route path="planner"   element={<StudyPlanner />} />
-        <Route path="analytics" element={<Analytics />} />
-        <Route path="leaderboard" element={<Leaderboard />} />
+        <Route index element={onboarded ? <Dashboard /> : <Navigate to="/onboarding" replace />} />
+        <Route path="documents"     element={<Documents />} />
+        <Route path="chat"          element={<ChatTutor />} />
+        <Route path="flashcards"    element={<Flashcards />} />
+        <Route path="quiz"          element={<QuizEngine />} />
+        <Route path="notes"         element={<SmartNotes />} />
+        <Route path="planner"       element={<StudyPlanner />} />
+        <Route path="analytics"     element={<Analytics />} />
+        <Route path="leaderboard"   element={<Leaderboard />} />
         <Route path="notifications" element={<Notifications />} />
-        <Route path="profile"   element={<Profile />} />
-        <Route path="settings"  element={<Settings />} />
-        <Route path="admin"     element={<AdminPanel />} />
+        <Route path="profile"       element={<Profile />} />
+        <Route path="settings"      element={<Settings />} />
+        <Route path="admin"         element={<AdminPanel />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true)
-  useEffect(() => { setTimeout(() => setShowSplash(false), 2800) }, [])
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 2800)
+    return () => clearTimeout(t)
+  }, [])
+
   if (showSplash) return <SplashScreen />
+
   return (
     <AppProvider>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: { background: '#fff', color: '#1A1F36', borderRadius: '16px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 24px rgba(15,115,247,0.12)', border: '1px solid #E2EAF4' },
+          success: { iconTheme: { primary: '#22C55E', secondary: '#fff' } },
+          error:   { iconTheme: { primary: '#EF4444', secondary: '#fff' } },
+        }}
+      />
       <AppRoutes />
     </AppProvider>
   )
