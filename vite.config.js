@@ -1,23 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  resolve: {
-    alias: { '@': path.resolve(__dirname, './src') },
-  },
+  base: '/ngoms-ai/',
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor:   ['react', 'react-dom', 'react-router-dom'],
-          firebase: ['firebase/app', 'firebase/firestore'],
-          charts:   ['recharts'],
-          ui:       ['lucide-react', 'react-hot-toast'],
-        },
-      },
-    },
-    chunkSizeWarningLimit: 1000,
+    outDir: 'dist',
+    sourcemap: false,
+  },
+  server: {
+    port: 3000,
   },
 })
