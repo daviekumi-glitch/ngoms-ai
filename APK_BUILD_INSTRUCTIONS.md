@@ -1,45 +1,30 @@
-# APK Build Instructions
+# APK Build Fix Instructions
 
-The GitHub Actions workflow file cannot be pushed automatically due to token limitations.
-Please create this file manually in your GitHub repo:
+The GitHub Actions APK build fails because it uses Java 21, but Capacitor/Gradle needs Java 17.
 
-## Steps:
-1. Go to https://github.com/daviekumi-glitch/ngoms-ai
-2. Click "Add file" > "Create new file"
-3. Name it: `.github/workflows/build-apk.yml`
-4. Paste the content below:
+## Quick Fix (Manual — 1 minute)
 
-```yaml
-name: Build Android APK
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - run: npm ci || npm install
-      - run: npm run build
-      - run: npx cap add android || true
-      - run: npx cap sync android
-      - working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ngoms-ai-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-```
+1. Go to: https://github.com/daviekumi-glitch/ngoms-ai/edit/main/.github/workflows/build-apk.yml
+2. Find this line:
+   ```
+   java-version: '21'
+   ```
+3. Change it to:
+   ```
+   java-version: '17'
+   ```
+4. Below the `build-apk` step, add this env block:
+   ```yaml
+   env:
+     JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
+     GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx2048m -Dorg.gradle.daemon=false
+   ```
+5. Click "Commit changes" → Done. Build will auto-trigger.
 
-5. Click "Commit new file"
-6. The APK build will trigger automatically on every push to main
-7. Download the APK from the "Actions" tab > latest run > Artifacts
+## Why This Happens
+- Java 21 changed method signatures that Gradle 8.x depends on
+- Capacitor's generated Android project requires Java 17 compatibility
+- The `GRADLE_OPTS` flag prevents OOM (out of memory) errors in CI
+
+## Full Fixed Workflow
+See the content in `.github/workflows/build-apk.yml` — change `java-version: '21'` to `'17'` and add GRADLE_OPTS.
