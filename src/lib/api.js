@@ -84,6 +84,10 @@ export async function deleteRecord(collectionKey, id) {
 // ── AI actions via edge function ──
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ngoms-ai`
 
+function getApiKey() {
+  try { return localStorage.getItem('ngoms_openrouter_key') || '' } catch { return '' }
+}
+
 async function callAi(action, payload) {
   try {
     const res = await fetch(FUNCTION_URL, {
@@ -92,7 +96,7 @@ async function callAi(action, payload) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
       },
-      body: JSON.stringify({ action, payload }),
+      body: JSON.stringify({ action, payload, apiKey: getApiKey() }),
     })
     if (!res.ok) {
       console.error('AI action failed:', res.status)

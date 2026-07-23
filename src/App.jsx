@@ -52,11 +52,11 @@ function MaintenanceGate({ children }) {
 }
 
 function AppRoutes() {
-  const [onboarded] = useState(() => !!localStorage.getItem('ngoms_onboarded'))
+  const [onboarded, setOnboarded] = useState(() => !!localStorage.getItem('ngoms_onboarded'))
   return (
     <Suspense fallback={<PageSkeleton />}>
       <Routes>
-        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/onboarding" element={<Onboarding onDone={() => setOnboarded(true)} />} />
         <Route path="/" element={<MaintenanceGate><Layout /></MaintenanceGate>}>
           <Route index element={onboarded ? <Dashboard /> : <Navigate to="/onboarding" replace />} />
           <Route path="documents"      element={<Documents />} />
