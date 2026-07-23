@@ -89,6 +89,27 @@ export default function Settings() {
   // 15. Version / Changelog modal
   const [showChangelog, setShowChangelog] = useState(false)
 
+  // OpenRouter API key
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [apiKeyInput, setApiKeyInput] = useState('')
+  const [hasApiKey, setHasApiKey] = useState(() => { try { return !!localStorage.getItem('ngoms_openrouter_key') } catch { return false } })
+
+  const handleSaveApiKey = () => {
+    if (!apiKeyInput.trim()) return
+    try { localStorage.setItem('ngoms_openrouter_key', apiKeyInput.trim()) } catch {}
+    setHasApiKey(true)
+    setApiKeyInput('')
+    setShowApiKey(false)
+    toast.success('API key saved! AI features are now enabled.')
+  }
+
+  const handleRemoveApiKey = () => {
+    try { localStorage.removeItem('ngoms_openrouter_key') } catch {}
+    setHasApiKey(false)
+    setShowApiKey(false)
+    toast.success('API key removed')
+  }
+
   const AVATARS = ['🎓','📚','🧠','⚡','🔥','🌟','💡','🎯','🚀','🦁','🐉','🦊','🎮','💎','🏆']
 
   // Apply theme to document
@@ -279,6 +300,46 @@ export default function Settings() {
             user?.plan === 'Premium' ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white' :
             'bg-surface-muted text-ink-muted'
           }`}>{user?.plan || 'Free'}</span>
+        </Row>
+      </SECTION>
+
+      {/* ─── AI Configuration ─── */}
+      <SECTION title="AI Configuration">
+        <Row icon={Zap} label="OpenRouter API Key" desc="Powers AI Tutor, Quiz & Notes">
+          <button onClick={() => setShowApiKey(!showApiKey)}
+            className="text-sm font-semibold text-brand bg-brand-soft px-3 py-1.5 rounded-xl">
+            {hasApiKey ? 'Update' : 'Add Key'}
+          </button>
+        </Row>
+        {showApiKey && (
+          <div className="bg-surface-muted rounded-2xl p-4 mt-1 space-y-3 animate-slide-up">
+            <p className="text-xs text-ink-muted leading-relaxed">
+              Ngoms AI uses OpenRouter to access free AI models. Get a free key at{' '}
+              <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-brand font-semibold underline">openrouter.ai/keys</a>.
+              Your key is stored only on this device.
+            </p>
+            <input
+              type="password"
+              className="input"
+              placeholder="sk-or-v1-..."
+              value={apiKeyInput}
+              onChange={e => setApiKeyInput(e.target.value)}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button onClick={handleSaveApiKey} disabled={!apiKeyInput.trim()}
+                className="btn-primary flex-1 py-3 text-sm">Save Key</button>
+              {hasApiKey && (
+                <button onClick={handleRemoveApiKey}
+                  className="btn-ghost flex-1 py-3 text-sm text-danger">Remove</button>
+              )}
+            </div>
+          </div>
+        )}
+        <Row icon={Check} label="AI Status" desc={hasApiKey ? 'API key configured — AI features ready' : 'No API key — AI features limited'}>
+          <span className={`chip text-[10px] ${hasApiKey ? 'chip-success' : 'chip-warning'}`}>
+            {hasApiKey ? 'Connected' : 'Not Set'}
+          </span>
         </Row>
       </SECTION>
 
