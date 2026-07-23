@@ -1,12 +1,10 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import { fetchAll, createRecord, updateRecord, deleteRecord } from '../lib/firebaseApi'
+import { fetchAll, createRecord, updateRecord, deleteRecord } from '../lib/api'
 
 const AppCtx = createContext(null)
 export const useApp = () => useContext(AppCtx)
 
-// Admin is unlocked if email matches OR if user manually unlocked via the panel PIN
-const ADMIN_EMAILS = ['daviekumi@gmail.com', 'admin@ngoms.ai', 'daviekumi-glitch@github.com']
-const ADMIN_PIN = '1234'  // simple fallback PIN for admin access
+const ADMIN_PIN = '1234'
 
 function loadUser() {
   try {
@@ -14,11 +12,6 @@ function loadUser() {
     if (saved) return JSON.parse(saved)
   } catch {}
   return { name: '', email: '', plan: 'Free', role: 'Student', xp: 0, streak: 0 }
-}
-
-function isAdminEmail(email) {
-  if (!email) return false
-  return ADMIN_EMAILS.some(a => a.toLowerCase() === email.toLowerCase().trim())
 }
 
 const DEFAULT_DATA = {
@@ -30,15 +23,12 @@ const DEFAULT_DATA = {
 }
 
 export function AppProvider({ children }) {
-  const [data, setData]         = useState(DEFAULT_DATA)
-  const [loading, setLoading]   = useState(true)
-  const [user, setUserState]    = useState(loadUser)
-  // Separate admin-unlock state so admin can access panel without setting email
+  const [data, setData] = useState(DEFAULT_DATA)
+  const [loading, setLoading] = useState(true)
+  const [user, setUserState] = useState(loadUser)
   const [adminUnlocked, setAdminUnlocked] = useState(() => {
     try { return localStorage.getItem('ngoms_admin_unlocked') === 'true' } catch { return false }
   })
-
-  const isAdmin = adminUnlocked || isAdminEmail(user?.email)
 
   const setUser = useCallback((u) => {
     setUserState(u)
@@ -63,9 +53,7 @@ export function AppProvider({ children }) {
     setLoading(true)
     try {
       const res = await fetchAll()
-      if (res?.success) {
-        setData(prev => ({ ...DEFAULT_DATA, ...prev, ...res }))
-      }
+      if (res?.success) setData(prev => ({ ...DEFAULT_DATA, ...prev, ...res }))
     } catch (e) { console.error('fetchAll error:', e) }
     finally { setLoading(false) }
   }, [])
@@ -117,11 +105,11 @@ export function AppProvider({ children }) {
 
   const value = {
     ...data,
-    data,         // also expose as object for admin panel
+    data,
     loading,
     user,
     setUser,
-    isAdmin,
+    isAdmin: adminUnlocked,
     unlockAdmin,
     lockAdmin,
     isFeatureEnabled,

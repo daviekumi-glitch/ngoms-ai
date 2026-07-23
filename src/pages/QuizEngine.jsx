@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Zap, CheckCircle, XCircle, ChevronRight, Trophy, RefreshCw, Clock, ArrowLeft } from 'lucide-react'
+import { Zap, CircleCheck as CheckCircle, Circle as XCircle, ChevronRight, Trophy, RefreshCw, Clock, ArrowLeft, Sparkles } from 'lucide-react'
 import { useApp } from '../context/AppContext'
-
-const API_URL = 'https://vesper-ecdb8354.base44.app/functions/ngomsApi'
+import { aiQuiz } from '../lib/api'
+import toast from 'react-hot-toast'
 
 function QuizSession({ quiz, onBack }) {
   const qs = quiz.questions || []
@@ -20,11 +20,11 @@ function QuizSession({ quiz, onBack }) {
   )
 
   if (idx >= qs.length) {
-    const score   = answers.filter(a => a.correct).length
-    const pct     = Math.round((score / qs.length) * 100)
+    const score = answers.filter(a => a.correct).length
+    const pct = Math.round((score / qs.length) * 100)
     const elapsed = Math.round((Date.now() - startTime) / 1000)
-    const mins    = Math.floor(elapsed / 60)
-    const secs    = elapsed % 60
+    const mins = Math.floor(elapsed / 60)
+    const secs = elapsed % 60
     return (
       <div className="flex flex-col items-center gap-5 py-6 animate-scale-in">
         <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-btn ${pct >= 70 ? 'bg-brand' : 'bg-amber-400'}`}>
@@ -38,7 +38,6 @@ function QuizSession({ quiz, onBack }) {
           </p>
         </div>
 
-        {/* Review */}
         <div className="w-full space-y-2 max-h-52 overflow-y-auto">
           {answers.map((a, i) => (
             <div key={i} className={`flex items-start gap-2 p-3 rounded-2xl text-sm ${a.correct ? 'bg-green-50' : 'bg-red-50'}`}>
@@ -47,7 +46,7 @@ function QuizSession({ quiz, onBack }) {
                 : <XCircle size={14} className="text-danger shrink-0 mt-0.5" />}
               <div>
                 <p className="font-medium text-ink text-xs">{a.q}</p>
-                {!a.correct && <p className="text-xs text-ink-muted">✓ {a.answer}</p>}
+                {!a.correct && <p className="text-xs text-ink-muted">Correct: {a.answer}</p>}
               </div>
             </div>
           ))}
@@ -63,7 +62,7 @@ function QuizSession({ quiz, onBack }) {
     )
   }
 
-  const q   = qs[idx]
+  const q = qs[idx]
   const opts = q.options || []
 
   const pick = (opt) => {
@@ -78,7 +77,6 @@ function QuizSession({ quiz, onBack }) {
 
   return (
     <div className="space-y-5">
-      {/* Progress */}
       <div className="flex items-center gap-3">
         <button onClick={onBack} className="w-8 h-8 rounded-xl bg-surface-soft border border-surface-border flex items-center justify-center shrink-0">
           <ArrowLeft size={15} className="text-ink" />
@@ -89,18 +87,16 @@ function QuizSession({ quiz, onBack }) {
         <span className="text-sm font-bold text-ink-muted shrink-0">{idx + 1}/{qs.length}</span>
       </div>
 
-      {/* Question */}
       <div className="card animate-slide-up">
         <span className="chip mb-3 text-xs">Question {idx + 1}</span>
         <p className="font-bold text-ink text-sm leading-snug mt-1">{q.question}</p>
       </div>
 
-      {/* Options */}
       <div className="space-y-2.5">
         {opts.map((opt, i) => {
           let cls = 'border-surface-border bg-white text-ink'
           if (selected !== null) {
-            if (opt === q.answer)   cls = 'border-success bg-green-50 text-success'
+            if (opt === q.answer) cls = 'border-success bg-green-50 text-success'
             else if (opt === selected) cls = 'border-danger bg-red-50 text-danger'
           }
           return (
@@ -123,8 +119,9 @@ function QuizSession({ quiz, onBack }) {
 
 export default function QuizEngine() {
   const { quizzes } = useApp()
-  const [active, setActive]       = useState(null)
-  const [aiTopic, setAiTopic]     = useState('')
+  const [active, setActive] = useState(null)
+  const [aiTopic, setAiTopic] = useState('')
+  const [aiDifficulty, setAiDifficulty] = useState('Medium')
   const [aiLoading, setAiLoading] = useState(false)
 
   const available = (quizzes || []).filter(q => q.status === 'Active' || q.status === 'active')
@@ -133,16 +130,16 @@ export default function QuizEngine() {
     if (!aiTopic.trim() || aiLoading) return
     setAiLoading(true)
     try {
-      const res  = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate_quiz', topic: aiTopic, count: 5 }),
-      })
-      const data = await res.json()
-      if (data.questions?.length) {
-        setActive({ title: `AI: ${aiTopic}`, questions: data.questions })
+      const res = await aiQuiz(aiTopic.trim(), aiDifficulty, 5)
+      if (res?.success && res.questions?.length) {
+        setActive({ title: `AI: ${aiTopic}`, questions: res.questions })
+        setAiTopic('')
+      } else {
+        toast.error(res?.error || 'Could not generate quiz. Try another topic.')
       }
-    } catch (e) { console.error(e) }
+    } catch (e) {
+      toast.error('Connection error. Please try again.')
+    }
     setAiLoading(false)
   }
 
@@ -162,23 +159,34 @@ export default function QuizEngine() {
       </div>
 
       {/* AI Generator */}
-      <div className="bg-gradient-to-br from-brand to-sky-500 rounded-3xl p-5 mb-6 shadow-btn">
-        <p className="font-bold text-white text-base mb-1">🤖 AI Quiz Generator</p>
-        <p className="text-white/70 text-sm mb-4">Enter any topic and I'll create a custom quiz</p>
-        <div className="flex gap-2">
+      <div className="bg-gradient-to-br from-brand to-sky-500 rounded-3xl p-5 mb-6 shadow-btn relative overflow-hidden">
+        <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" />
+        <div className="relative">
+          <p className="font-bold text-white text-base mb-1 flex items-center gap-2">
+            <Sparkles size={16} /> AI Quiz Generator
+          </p>
+          <p className="text-white/70 text-sm mb-4">Enter any topic and I'll create a custom quiz</p>
           <input
-            className="flex-1 bg-white/20 border border-white/30 rounded-2xl px-4 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-sm"
+            className="w-full bg-white/20 border border-white/30 rounded-2xl px-4 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-sm mb-2"
             placeholder="e.g. Photosynthesis, World War 2..."
             value={aiTopic}
             onChange={e => setAiTopic(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && generateAiQuiz()}
           />
+          <div className="flex gap-2 mb-3">
+            {['Easy', 'Medium', 'Hard'].map(d => (
+              <button key={d} onClick={() => setAiDifficulty(d)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  aiDifficulty === d ? 'bg-white text-brand' : 'bg-white/20 text-white/80'
+                }`}>{d}</button>
+            ))}
+          </div>
           <button
             onClick={generateAiQuiz}
             disabled={!aiTopic.trim() || aiLoading}
-            className="bg-white text-brand font-bold px-5 py-2.5 rounded-2xl text-sm disabled:opacity-50 active:scale-95 transition-all"
+            className="w-full bg-white text-brand font-bold py-3 rounded-2xl text-sm disabled:opacity-50 active:scale-95 transition-all flex items-center justify-center gap-2"
           >
-            {aiLoading ? '...' : 'Go'}
+            {aiLoading ? <><RefreshCw size={15} className="animate-spin" /> Generating...</> : <><Zap size={15} /> Generate Quiz</>}
           </button>
         </div>
       </div>

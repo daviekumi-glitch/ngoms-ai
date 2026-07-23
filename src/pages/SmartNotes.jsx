@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { FileText, Sparkles, Copy, Check, Wand2, ArrowLeft } from 'lucide-react'
-const API_URL = 'https://vesper-ecdb8354.base44.app/functions/ngomsApi'
+import { Sparkles, Copy, Check, Wand as Wand2 } from 'lucide-react'
+import { aiNotes } from '../lib/api'
+import toast from 'react-hot-toast'
 
 const formats = [
-  { id: 'bullet', label: '📋 Bullet Points', desc: 'Key points at a glance' },
-  { id: 'cornell', label: '📓 Cornell Notes', desc: 'Cues, notes & summary' },
-  { id: 'mindmap', label: '🕸️ Mind Map', desc: 'Visual concept web' },
+  { id: 'bullet', label: 'Bullet Points', desc: 'Key points at a glance', icon: '📋' },
+  { id: 'cornell', label: 'Cornell Notes', desc: 'Cues, notes & summary', icon: '📓' },
+  { id: 'mindmap', label: 'Mind Map', desc: 'Visual concept web', icon: '🕸️' },
 ]
 
 export default function SmartNotes() {
@@ -19,14 +20,15 @@ export default function SmartNotes() {
     if (!topic.trim() || loading) return
     setLoading(true); setNotes(null)
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate_notes', topic, format }),
-      })
-      const data = await res.json()
-      setNotes(data.notes || data.content || 'Could not generate notes. Please try again.')
-    } catch { setNotes('Error generating notes. Please check your connection.') }
+      const res = await aiNotes(topic.trim(), format)
+      if (res?.success) {
+        setNotes(res.content || 'Could not generate notes. Please try again.')
+      } else {
+        toast.error(res?.error || 'Could not generate notes.')
+      }
+    } catch {
+      toast.error('Error generating notes. Please check your connection.')
+    }
     setLoading(false)
   }
 
@@ -66,6 +68,7 @@ export default function SmartNotes() {
               className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 text-left transition-all
                 ${format === f.id ? 'border-brand bg-brand-soft' : 'border-surface-border bg-white hover:border-brand/30'}`}
             >
+              <span className="text-2xl">{f.icon}</span>
               <div className="flex-1">
                 <p className={`font-semibold text-sm ${format === f.id ? 'text-brand' : 'text-ink'}`}>{f.label}</p>
                 <p className="text-xs text-ink-muted">{f.desc}</p>
@@ -97,12 +100,15 @@ export default function SmartNotes() {
       {notes && !loading && (
         <div className="card animate-slide-up">
           <div className="flex items-center justify-between mb-4">
-            <p className="font-bold text-ink">{formats.find(f => f.id === format)?.label}</p>
+            <p className="font-bold text-ink flex items-center gap-2">
+              <Sparkles size={16} className="text-brand" />
+              {formats.find(f => f.id === format)?.label}
+            </p>
             <button onClick={copy} className="flex items-center gap-1.5 text-xs font-semibold text-brand bg-brand-soft px-3 py-1.5 rounded-xl active:scale-95">
               {copied ? <><Check size={12} />Copied!</> : <><Copy size={12} />Copy</>}
             </button>
           </div>
-          <div className="text-sm text-ink leading-relaxed whitespace-pre-wrap bg-surface-soft rounded-2xl p-4 border border-surface-border font-mono">
+          <div className="text-sm text-ink leading-relaxed whitespace-pre-wrap bg-surface-soft rounded-2xl p-4 border border-surface-border">
             {notes}
           </div>
         </div>
